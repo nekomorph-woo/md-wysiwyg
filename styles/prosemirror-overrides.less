@@ -1,0 +1,30 @@
+@import "ui-variables";
+
+.ProseMirror {
+  min-height: 100%;
+  outline: none;
+
+  &::selection {
+    background-color: @background-color-selected;
+  }
+
+  > * { caret-color: @text-color; }
+  &:focus { outline: none; }
+
+  p.is-editor-empty:first-child::before {
+    content: attr(data-placeholder);
+    float: left;
+    color: @text-color-subtle;
+    pointer-events: none;
+    height: 0;
+  }
+
+  .ProseMirror-gapcursor::after {
+    border-top: 1px solid @text-color;
+  }
+
+  td.selectedCell,
+  th.selectedCell {
+    background-color: @background-color-selected;
+  }
+}

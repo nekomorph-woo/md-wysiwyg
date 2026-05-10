@@ -1,0 +1,30 @@
+@import "ui-variables";
+
+.md-wysiwyg-editor {
+  .math-inline-node,
+  .math-block-node {
+    .katex-display {
+      margin: 0;
+    }
+  }
+
+  .math-inline-node {
+    display: inline;
+    cursor: default;
+  }
+
+  .math-block-node {
+    display: block;
+    padding: 8px 0;
+    overflow-x: auto;
+  }
+
+  .math-error {
+    color: @text-color-error;
+    font-family: monospace;
+  }
+
+  .math-selected {
+    cursor: text;
+  }
+}

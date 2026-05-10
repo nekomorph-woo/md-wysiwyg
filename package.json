@@ -1,0 +1,57 @@
+{
+  "name": "md-wysiwyg",
+  "main": "./lib/md-wysiwyg",
+  "version": "0.1.0",
+  "description": "Typora-like WYSIWYG markdown editor and viewer for Pulsar",
+  "keywords": [],
+  "scripts": {
+    "build": "node esbuild-milkdown.js && node esbuild-mermaid.js"
+  },
+  "repository": "https://github.com/nekomorph-woo/tk-ATx",
+  "license": "MIT",
+  "engines": {
+    "atom": ">=1.0.0 <2.0.0"
+  },
+  "styles": [
+    "styles/md-wysiwyg.less",
+    "styles/prosemirror-overrides.less",
+    "styles/math.less",
+    "styles/mermaid.less"
+  ],
+  "configSchema": {
+    "editorMaxWidth": {
+      "type": "integer",
+      "default": 900,
+      "minimum": 400,
+      "maximum": 1600,
+      "title": "Editor Max Width",
+      "description": "Maximum width of the editor content area in pixels"
+    },
+    "mermaidRenderDelay": {
+      "type": "integer",
+      "default": 500,
+      "minimum": 100,
+      "maximum": 3000,
+      "title": "Mermaid Render Delay",
+      "description": "Delay in milliseconds before rendering mermaid diagrams"
+    },
+    "fontSize": {
+      "type": "integer",
+      "default": 0,
+      "minimum": 0,
+      "maximum": 32,
+      "title": "Font Size",
+      "description": "Custom font size in pixels. 0 means use theme default."
+    }
+  },
+  "dependencies": {
+    "@milkdown/kit": "^7.20.0",
+    "highlight.js": "^11.9.0",
+    "katex": "^0.16.45",
+    "mermaid": "^11.14.0",
+    "remark-math": "^6.0.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.0"
+  }
+}

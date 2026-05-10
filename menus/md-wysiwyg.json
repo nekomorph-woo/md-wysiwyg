@@ -1,0 +1,26 @@
+{
+  "context-menu": {
+    "atom-text-editor": [
+      {
+        "label": "Toggle WYSIWYG",
+        "command": "md-wysiwyg:toggle"
+      }
+    ]
+  },
+  "menu": [
+    {
+      "label": "Packages",
+      "submenu": [
+        {
+          "label": "Markdown WYSIWYG",
+          "submenu": [
+            {
+              "label": "Toggle WYSIWYG",
+              "command": "md-wysiwyg:toggle"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
