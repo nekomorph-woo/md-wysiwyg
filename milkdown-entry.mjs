@@ -1,4 +1,4 @@
-export { Editor, rootCtx, defaultValueCtx, editorViewCtx } from '@milkdown/kit/core';
+export { Editor, rootCtx, defaultValueCtx, editorViewCtx, serializerCtx } from '@milkdown/kit/core';
 export { commonmark } from '@milkdown/kit/preset/commonmark';
 export { gfm } from '@milkdown/kit/preset/gfm';
 export { listener, listenerCtx } from '@milkdown/kit/plugin/listener';
@@ -15,4 +15,4 @@ export { Decoration, DecorationSet } from '@milkdown/kit/prose/view';
 // Custom plugins
 export { mathPlugin } from './milkdown-plugins/math.js';
 export { codeBlockViewPlugin } from './milkdown-plugins/highlight.js';
-export { sourceExpansionPlugin, collapseExpandedSource } from './milkdown-plugins/paragraph-info.js';
+export { sourceExpansionPlugin, getDocWithCollapsedSource } from './milkdown-plugins/paragraph-info.js';

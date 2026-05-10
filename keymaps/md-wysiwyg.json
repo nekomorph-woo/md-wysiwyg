@@ -1,5 +1,14 @@
 {
+  "atom-text-editor:not([mini])": {
+    "alt-w": "md-wysiwyg:toggle"
+  },
+  ".md-wysiwyg-editor": {
+    "alt-w": "md-wysiwyg:toggle"
+  },
+  ".md-wysiwyg-editor .ProseMirror": {
+    "alt-w": "md-wysiwyg:toggle"
+  },
   "atom-workspace": {
-    "alt-m": "md-wysiwyg:toggle"
+    "alt-w": "md-wysiwyg:toggle"
   }
 }

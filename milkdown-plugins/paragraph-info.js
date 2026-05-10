@@ -108,15 +108,14 @@ function collapse(state, expandedState) {
   return parseAndCollapse(state, from, to, fullText);
 }
 
-export function collapseExpandedSource(view) {
+export function getDocWithCollapsedSource(view) {
   const expandedState = sourceExpansionKey.getState(view.state);
-  if (!expandedState || !expandedState.expanded) return false;
+  if (!expandedState || !expandedState.expanded) return view.state.doc;
 
   const tr = collapse(view.state, expandedState);
-  if (!tr) return false;
+  if (!tr) return view.state.doc;
 
-  view.dispatch(tr);
-  return true;
+  return tr.doc;
 }
 
 function parseAndCollapse(state, from, to, fullText) {

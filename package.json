@@ -13,6 +13,15 @@
     "atom": ">=1.0.0 <2.0.0"
   },
   "activationCommands": {
+    "atom-text-editor:not([mini])": [
+      "md-wysiwyg:toggle"
+    ],
+    ".md-wysiwyg-editor": [
+      "md-wysiwyg:toggle"
+    ],
+    ".md-wysiwyg-editor .ProseMirror": [
+      "md-wysiwyg:toggle"
+    ],
     "atom-workspace": [
       "md-wysiwyg:toggle"
     ]
