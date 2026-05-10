@@ -11,12 +11,38 @@
   .math-inline-node {
     display: inline;
     cursor: default;
+
+    .math-source {
+      min-width: 6em;
+    }
   }
 
   .math-block-node {
     display: block;
     padding: 8px 0;
     overflow-x: auto;
+
+    .math-source {
+      width: 100%;
+      min-height: 5em;
+      resize: vertical;
+    }
+  }
+
+  .math-source {
+    color: @text-color;
+    background-color: @input-background-color;
+    border: 1px solid @base-border-color;
+    border-radius: 3px;
+    padding: 4px 6px;
+    font-family: monospace;
+    font-size: 0.95em;
+    line-height: 1.5;
+    outline: none;
+
+    &:focus {
+      border-color: @background-color-info;
+    }
   }
 
   .math-error {

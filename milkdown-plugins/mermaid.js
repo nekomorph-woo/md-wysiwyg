@@ -1,18 +1,25 @@
 let mermaidInstance = null;
 
+function currentTheme() {
+  const themeAttr = document.documentElement.getAttribute('data-theme');
+  return themeAttr === 'light' ? 'default' : 'dark';
+}
+
+function initializeMermaid(mermaid) {
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: currentTheme(),
+    securityLevel: 'loose',
+  });
+}
+
 export function loadMermaid() {
   if (mermaidInstance) return Promise.resolve(mermaidInstance);
   return new Promise((resolve, reject) => {
     try {
       const mod = require('./mermaid-bundle.cjs');
       mermaidInstance = mod.default || mod;
-      const themeAttr = document.documentElement.getAttribute('data-theme');
-      const theme = themeAttr === 'light' ? 'default' : 'dark';
-      mermaidInstance.initialize({
-        startOnLoad: false,
-        theme: theme,
-        securityLevel: 'loose',
-      });
+      initializeMermaid(mermaidInstance);
       resolve(mermaidInstance);
     } catch (err) {
       console.error('md-wysiwyg: Failed to load mermaid', err);
@@ -24,6 +31,7 @@ export function loadMermaid() {
 export function createMermaidView(node, view, getPos) {
   let renderTimeout = null;
   let currentSrc = '';
+  let renderVersion = 0;
 
   const wrapper = document.createElement('div');
   wrapper.classList.add('mermaid-wrapper');
@@ -32,8 +40,9 @@ export function createMermaidView(node, view, getPos) {
   preview.classList.add('mermaid-preview');
   wrapper.appendChild(preview);
 
-  const srcEl = document.createElement('pre');
+  const srcEl = document.createElement('textarea');
   srcEl.classList.add('mermaid-source');
+  srcEl.spellcheck = false;
   wrapper.appendChild(srcEl);
 
   let isFocused = false;
@@ -43,8 +52,9 @@ export function createMermaidView(node, view, getPos) {
     srcEl.style.display = '';
     preview.style.display = 'none';
     const text = node.textContent;
-    srcEl.textContent = text;
+    srcEl.value = text;
     currentSrc = text;
+    setTimeout(() => srcEl.focus(), 0);
   }
 
   function showPreview() {
@@ -60,12 +70,17 @@ export function createMermaidView(node, view, getPos) {
     const delay = (typeof atom !== 'undefined' && atom.config)
       ? (atom.config.get('md-wysiwyg.mermaidRenderDelay') || 500)
       : 500;
-    renderTimeout = setTimeout(() => renderDiagram(src), delay);
+    const version = ++renderVersion;
+    renderTimeout = setTimeout(() => renderDiagram(src, version), delay);
   }
 
-  async function renderDiagram(src) {
+  async function renderDiagram(src, version) {
     if (!src.trim()) {
-      preview.innerHTML = '<span class="mermaid-placeholder">Mermaid diagram</span>';
+      preview.textContent = '';
+      const placeholder = document.createElement('span');
+      placeholder.classList.add('mermaid-placeholder');
+      placeholder.textContent = 'Mermaid diagram';
+      preview.appendChild(placeholder);
       return;
     }
     const id = 'mermaid-' + Math.random().toString(36).slice(2, 8);
@@ -76,14 +91,44 @@ export function createMermaidView(node, view, getPos) {
         return;
       }
       const { svg } = await mermaid.render(id, src);
+      if (version !== renderVersion) return;
       preview.innerHTML = svg;
     } catch (err) {
+      if (version !== renderVersion) return;
       console.error('md-wysiwyg: mermaid render error', err);
       const orphan = document.getElementById('d' + id);
       if (orphan) orphan.remove();
-      preview.innerHTML = '<span class="mermaid-error">Mermaid error: ' + (err.message || err) + '</span>';
+      preview.textContent = '';
+      const error = document.createElement('span');
+      error.classList.add('mermaid-error');
+      error.textContent = 'Mermaid error: ' + (err.message || err);
+      preview.appendChild(error);
     }
   }
+
+  function updateNode(value) {
+    if (typeof getPos !== 'function') return;
+    const pos = getPos();
+    if (typeof pos !== 'number') return;
+    const content = value ? node.type.schema.text(value) : null;
+    const nextNode = node.type.create(node.attrs, content, node.marks);
+    view.dispatch(view.state.tr.replaceWith(pos, pos + node.nodeSize, nextNode));
+  }
+
+  srcEl.addEventListener('input', () => updateNode(srcEl.value));
+  srcEl.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      showPreview();
+      view.focus();
+    }
+  });
+
+  const themeListener = () => {
+    if (mermaidInstance) initializeMermaid(mermaidInstance);
+    if (!isFocused) scheduleRender(node.textContent);
+  };
+  window.addEventListener('md-wysiwyg:theme-changed', themeListener);
 
   showPreview();
 
@@ -95,7 +140,7 @@ export function createMermaidView(node, view, getPos) {
       if (newSrc !== currentSrc) {
         currentSrc = newSrc;
         if (isFocused) {
-          srcEl.textContent = newSrc;
+          if (srcEl.value !== newSrc) srcEl.value = newSrc;
         } else {
           scheduleRender(newSrc);
         }
@@ -120,6 +165,7 @@ export function createMermaidView(node, view, getPos) {
     },
     destroy() {
       if (renderTimeout) clearTimeout(renderTimeout);
+      window.removeEventListener('md-wysiwyg:theme-changed', themeListener);
     },
   };
 }
