@@ -14,10 +14,14 @@ function escapeHTML(value) {
 
 function renderKatex(value, displayMode) {
   try {
+    const allowUnsafeRendering = typeof atom !== 'undefined' && atom.config
+      ? Boolean(atom.config.get('md-wysiwyg.allowUnsafeRendering'))
+      : false;
+
     return katex.renderToString(value, {
       displayMode,
       throwOnError: true,
-      trust: true,
+      trust: allowUnsafeRendering,
     });
   } catch (e) {
     return '<span class="math-error">' + escapeHTML(value) + '</span>';

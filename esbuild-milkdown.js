@@ -4,7 +4,7 @@ esbuild.build({
   entryPoints: ['milkdown-entry.mjs'],
   bundle: true,
   format: 'cjs',
-  target: 'node20',
+  target: 'node18',
   outfile: 'lib/milkdown-bundle.cjs',
   external: ['atom', 'electron', 'mermaid'],
   platform: 'node',

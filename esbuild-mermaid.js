@@ -4,7 +4,7 @@ esbuild.build({
   entryPoints: ['node_modules/mermaid/dist/mermaid.core.mjs'],
   bundle: true,
   format: 'cjs',
-  target: 'node20',
+  target: 'node18',
   outfile: 'lib/mermaid-bundle.cjs',
   external: ['atom', 'electron'],
   platform: 'node',

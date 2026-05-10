@@ -15,4 +15,4 @@ export { Decoration, DecorationSet } from '@milkdown/kit/prose/view';
 // Custom plugins
 export { mathPlugin } from './milkdown-plugins/math.js';
 export { codeBlockViewPlugin } from './milkdown-plugins/highlight.js';
-export { sourceExpansionPlugin } from './milkdown-plugins/paragraph-info.js';
+export { sourceExpansionPlugin, collapseExpandedSource } from './milkdown-plugins/paragraph-info.js';

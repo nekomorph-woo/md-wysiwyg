@@ -5,11 +5,18 @@ function currentTheme() {
   return themeAttr === 'light' ? 'default' : 'dark';
 }
 
+function securityLevel() {
+  const allowUnsafeRendering = typeof atom !== 'undefined' && atom.config
+    ? Boolean(atom.config.get('md-wysiwyg.allowUnsafeRendering'))
+    : false;
+  return allowUnsafeRendering ? 'loose' : 'strict';
+}
+
 function initializeMermaid(mermaid) {
   mermaid.initialize({
     startOnLoad: false,
     theme: currentTheme(),
-    securityLevel: 'loose',
+    securityLevel: securityLevel(),
   });
 }
 

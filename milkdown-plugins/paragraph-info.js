@@ -108,6 +108,17 @@ function collapse(state, expandedState) {
   return parseAndCollapse(state, from, to, fullText);
 }
 
+export function collapseExpandedSource(view) {
+  const expandedState = sourceExpansionKey.getState(view.state);
+  if (!expandedState || !expandedState.expanded) return false;
+
+  const tr = collapse(view.state, expandedState);
+  if (!tr) return false;
+
+  view.dispatch(tr);
+  return true;
+}
+
 function parseAndCollapse(state, from, to, fullText) {
   if (fullText.trim().length === 0) return cleanupTr(state);
 
