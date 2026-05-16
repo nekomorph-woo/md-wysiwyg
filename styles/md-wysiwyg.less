@@ -1,6 +1,7 @@
 @import "ui-variables";
 
 .md-wysiwyg-editor {
+  position: relative;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -111,6 +112,55 @@
 
     input[type="checkbox"] { margin-right: 6px; }
 
+    li[data-item-type="task"] {
+      display: grid;
+      grid-template-columns: max-content minmax(0, 1fr);
+      column-gap: 0.45em;
+      align-items: start;
+      list-style: none;
+      padding-left: 0;
+
+      > :not(.md-wysiwyg-task-checkbox) {
+        grid-column: 2;
+      }
+
+      > p:first-of-type {
+        grid-row: 1;
+        margin-top: 0;
+      }
+    }
+
+    .md-wysiwyg-task-checkbox {
+      cursor: pointer;
+      grid-column: 1;
+      grid-row: 1;
+      margin: 0.35em 0 0;
+    }
+
     s { color: @text-color-subtle; }
   }
+}
+
+.md-wysiwyg-status {
+  color: @text-color-subtle;
+  font-size: 0.9em;
+  padding: 0 8px;
+  white-space: nowrap;
+}
+
+.md-wysiwyg-inline-status {
+  position: sticky;
+  right: 16px;
+  bottom: 10px;
+  align-self: flex-end;
+  margin: 8px 16px 10px;
+  padding: 3px 8px;
+  color: @text-color-subtle;
+  background-color: fade(@app-background-color, 88%);
+  border: 1px solid @base-border-color;
+  border-radius: 3px;
+  font-size: 0.9em;
+  line-height: 1.4;
+  pointer-events: none;
+  white-space: nowrap;
 }

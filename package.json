@@ -32,6 +32,13 @@
     "styles/math.less",
     "styles/mermaid.less"
   ],
+  "consumedServices": {
+    "status-bar": {
+      "versions": {
+        "^1.0.0": "consumeStatusBar"
+      }
+    }
+  },
   "configSchema": {
     "editorMaxWidth": {
       "type": "integer",

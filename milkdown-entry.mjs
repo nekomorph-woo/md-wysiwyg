@@ -9,10 +9,12 @@ export { indent } from '@milkdown/kit/plugin/indent';
 export { trailing } from '@milkdown/kit/plugin/trailing';
 export { upload } from '@milkdown/kit/plugin/upload';
 export { getMarkdown, $node, $mark, $remark, $prose, $command, $inputRule, $shortcut } from '@milkdown/kit/utils';
-export { Plugin, PluginKey } from '@milkdown/kit/prose/state';
+export { Plugin, PluginKey, TextSelection } from '@milkdown/kit/prose/state';
 export { Decoration, DecorationSet } from '@milkdown/kit/prose/view';
 
 // Custom plugins
 export { mathPlugin } from './milkdown-plugins/math.js';
 export { codeBlockViewPlugin } from './milkdown-plugins/highlight.js';
 export { sourceExpansionPlugin, getDocWithCollapsedSource } from './milkdown-plugins/paragraph-info.js';
+export { taskListInteractionPlugin } from './milkdown-plugins/task-list.js';
+export { editingKeysPlugin } from './milkdown-plugins/editing-keys.js';
