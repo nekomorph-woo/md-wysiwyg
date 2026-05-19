@@ -198,40 +198,71 @@ function findMarkRange(state, markName) {
   return { from: start, to: end, mark: foundMark };
 }
 
+function safeRange(state, range) {
+  if (!range || typeof range.from !== 'number' || typeof range.to !== 'number') return null;
+  const from = Math.max(0, Math.min(range.from, state.doc.content.size));
+  const to = Math.max(from, Math.min(range.to, state.doc.content.size));
+  return from < to ? { from, to } : null;
+}
+
 function setLink(view, attrs) {
   const href = attrs && attrs.href ? String(attrs.href).trim() : '';
-  if (!href) return removeLink(view);
+  if (!href) return removeLink(view, attrs);
 
   const linkType = view.state.schema.marks.link;
   if (!linkType) return false;
   const title = attrs.title ? String(attrs.title) : null;
   const { state } = view;
   const { selection } = state;
+  const explicitRange = safeRange(state, attrs.range);
+  const text = attrs.text ? String(attrs.text) : '';
+  const linkMark = linkType.create({ href, title });
+
+  if (explicitRange) {
+    const currentText = state.doc.textBetween(explicitRange.from, explicitRange.to, '', '');
+    if (text && text !== currentText) {
+      const node = state.schema.text(text, [linkMark]);
+      return dispatchAndFocus(view, state.tr.replaceWith(explicitRange.from, explicitRange.to, node));
+    }
+    return dispatchAndFocus(
+      view,
+      state.tr
+        .removeMark(explicitRange.from, explicitRange.to, linkType)
+        .addMark(explicitRange.from, explicitRange.to, linkMark)
+    );
+  }
 
   if (selection.empty) {
     const existing = findMarkRange(state, 'link');
     if (existing) {
-      const mark = linkType.create({ href, title });
+      if (text && text !== state.doc.textBetween(existing.from, existing.to, '', '')) {
+        const node = state.schema.text(text, [linkMark]);
+        return dispatchAndFocus(view, state.tr.replaceWith(existing.from, existing.to, node));
+      }
       const tr = state.tr
         .removeMark(existing.from, existing.to, existing.mark)
-        .addMark(existing.from, existing.to, mark);
+        .addMark(existing.from, existing.to, linkMark);
       return dispatchAndFocus(view, tr);
     }
 
-    const label = attrs.text || href;
-    const node = state.schema.text(label, [linkType.create({ href, title })]);
+    const label = text || href;
+    const node = state.schema.text(label, [linkMark]);
     return dispatchAndFocus(view, state.tr.replaceSelectionWith(node));
   }
 
-  const tr = state.tr.addMark(selection.from, selection.to, linkType.create({ href, title }));
+  const tr = state.tr.addMark(selection.from, selection.to, linkMark);
   return dispatchAndFocus(view, tr);
 }
 
-function removeLink(view) {
+function removeLink(view, attrs = {}) {
   const linkType = view.state.schema.marks.link;
   if (!linkType) return false;
   const { state } = view;
   const { selection } = state;
+  const explicitRange = safeRange(state, attrs.range);
+  if (explicitRange) {
+    return dispatchAndFocus(view, state.tr.removeMark(explicitRange.from, explicitRange.to, linkType));
+  }
   const range = selection.empty ? findMarkRange(state, 'link') : null;
   const from = range ? range.from : selection.from;
   const to = range ? range.to : selection.to;
@@ -292,7 +323,7 @@ export function runEditorCommand(view, command, payload = {}) {
   if (command === 'mermaid') return insertCodeBlock(view, 'mermaid');
   if (command === 'horizontalRule') return insertHorizontalRule(view);
   if (command === 'setLink') return setLink(view, payload);
-  if (command === 'removeLink') return removeLink(view);
+  if (command === 'removeLink') return removeLink(view, payload);
   if (command === 'codeLanguage') return updateCodeBlockLanguageAtSelection(view, payload.language || '');
   if (command === 'insertText') return insertPlainText(view, payload.text || '');
   if (command === 'deleteSelection') return deleteSelection(view);

@@ -178,9 +178,9 @@
 .md-wysiwyg-link-popover {
   position: absolute;
   z-index: 10;
-  grid-template-columns: minmax(120px, 180px) minmax(180px, 280px) minmax(120px, 180px) repeat(4, max-content);
+  grid-template-columns: minmax(140px, 190px) minmax(200px, 300px) minmax(140px, 200px) repeat(4, max-content);
   gap: 6px;
-  align-items: center;
+  align-items: start;
   max-width: calc(100% - 24px);
   padding: 8px;
   background-color: @overlay-background-color;
@@ -190,7 +190,27 @@
 
   input {
     min-width: 0;
+    width: 100%;
   }
+}
+
+.md-wysiwyg-link-field {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  margin: 0;
+}
+
+.md-wysiwyg-link-label {
+  color: @text-color-highlight;
+  font-size: 0.9em;
+  line-height: 1.2;
+}
+
+.md-wysiwyg-link-hint {
+  color: @text-color-subtle;
+  font-size: 0.82em;
+  line-height: 1.25;
 }
 
 .md-wysiwyg-slash-menu {
