@@ -1,5 +1,6 @@
 import { Plugin, TextSelection } from '@milkdown/kit/prose/state';
 import { $prose } from '@milkdown/kit/utils';
+import { runEditorCommand } from './editor-commands';
 
 function hasModifier(event) {
   return event.metaKey || event.ctrlKey || event.altKey;
@@ -119,6 +120,15 @@ export const editingKeysPlugin = $prose(() => {
         return insertClipboardText(view, event);
       },
       handleKeyDown(view, event) {
+        if (event.key === 'Tab') {
+          const handled = runEditorCommand(
+            view,
+            event.shiftKey ? 'previousTableCell' : 'nextTableCell'
+          );
+          if (handled) event.preventDefault();
+          return handled;
+        }
+
         if (moveCursorWithPrimaryArrow(view, event)) return true;
         if (hasModifier(event)) return false;
 

@@ -90,11 +90,14 @@
       border-collapse: collapse;
       width: 100%;
       margin: 1em 0;
+      table-layout: fixed;
     }
 
     th, td {
       border: 1px solid @base-border-color;
       padding: 6px 13px;
+      min-width: 80px;
+      vertical-align: top;
     }
 
     th {
@@ -166,8 +169,27 @@
   }
 }
 
+.md-wysiwyg-table-toolbar {
+  position: sticky;
+  top: 39px;
+  z-index: 4;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+  padding: 5px 10px;
+  background-color: @tool-panel-background-color;
+  border-bottom: 1px solid @base-border-color;
+}
+
+.md-wysiwyg-table-button {
+  height: 24px;
+  padding: 0 8px;
+  line-height: 22px;
+}
+
 .md-wysiwyg-heading-select,
-.md-wysiwyg-code-language {
+.md-wysiwyg-code-language,
+.md-wysiwyg-table-align {
   height: 26px;
   color: @text-color;
   background-color: @input-background-color;

@@ -1,4 +1,4 @@
-import { TextSelection } from '@milkdown/kit/prose/state';
+import { Selection, TextSelection } from '@milkdown/kit/prose/state';
 
 const MARK_COMMANDS = {
   strong: 'strong',
@@ -105,6 +105,9 @@ function replaceCurrentTextblock(view, node, selectInside = false) {
   if (selectInside && node.isTextblock) {
     const pos = Math.min(range.from + 1, tr.doc.content.size);
     tr = tr.setSelection(TextSelection.create(tr.doc, pos));
+  } else if (selectInside) {
+    const selection = Selection.findFrom(tr.doc.resolve(Math.min(range.from + 1, tr.doc.content.size)), 1, true);
+    if (selection) tr = tr.setSelection(selection);
   }
   return dispatchAndFocus(view, tr);
 }
@@ -166,6 +169,180 @@ function insertHorizontalRule(view) {
     view.state.schema.nodes.thematic_break;
   if (!horizontalRule) return false;
   return dispatchAndFocus(view, view.state.tr.replaceSelectionWith(horizontalRule.create()));
+}
+
+function createTableCell(schema, header, alignment = 'left', text = '') {
+  const type = header ? schema.nodes.table_header : schema.nodes.table_cell;
+  const paragraph = paragraphNode(schema, text);
+  if (!type || !paragraph) return null;
+  return type.createAndFill({ alignment }, paragraph);
+}
+
+function createTableNode(schema, rows = 3, cols = 3) {
+  const table = schema.nodes.table;
+  const headerRow = schema.nodes.table_header_row;
+  const tableRow = schema.nodes.table_row;
+  if (!table || !headerRow || !tableRow) return null;
+
+  const safeRows = Math.max(2, rows);
+  const safeCols = Math.max(1, cols);
+  const headerCells = Array.from({ length: safeCols }, (_, index) =>
+    createTableCell(schema, true, 'left', index === 0 ? 'Header' : 'Column ' + (index + 1))
+  );
+  const bodyRows = Array.from({ length: safeRows - 1 }, () => {
+    const cells = Array.from({ length: safeCols }, () => createTableCell(schema, false, 'left', ''));
+    return tableRow.create(null, cells);
+  });
+
+  return table.create(null, [headerRow.create(null, headerCells), ...bodyRows]);
+}
+
+function findTableContext(state) {
+  const { $from } = state.selection;
+  let tableDepth = -1;
+  let rowDepth = -1;
+  let cellDepth = -1;
+
+  for (let depth = $from.depth; depth > 0; depth--) {
+    const name = $from.node(depth).type.name;
+    if (cellDepth < 0 && (name === 'table_cell' || name === 'table_header')) cellDepth = depth;
+    if (rowDepth < 0 && (name === 'table_row' || name === 'table_header_row')) rowDepth = depth;
+    if (tableDepth < 0 && name === 'table') tableDepth = depth;
+  }
+
+  if (tableDepth < 0 || rowDepth < 0 || cellDepth < 0) return null;
+
+  return {
+    table: $from.node(tableDepth),
+    tablePos: $from.before(tableDepth),
+    rowIndex: $from.index(tableDepth),
+    colIndex: $from.index(rowDepth),
+  };
+}
+
+function replaceTable(view, context, rows) {
+  const nextTable = context.table.type.create(context.table.attrs, rows);
+  const tr = view.state.tr.replaceWith(
+    context.tablePos,
+    context.tablePos + context.table.nodeSize,
+    nextTable
+  );
+  const selection = Selection.findFrom(tr.doc.resolve(Math.min(context.tablePos + 1, tr.doc.content.size)), 1, true);
+  if (selection) tr.setSelection(selection);
+  return dispatchAndFocus(view, tr);
+}
+
+function insertTable(view, payload = {}) {
+  const rows = Number(payload.rows || 3);
+  const cols = Number(payload.cols || 3);
+  const table = createTableNode(view.state.schema, rows, cols);
+  if (!table) return false;
+  return replaceCurrentTextblock(view, table, true);
+}
+
+function addTableRow(view, after = true) {
+  const context = findTableContext(view.state);
+  if (!context) return false;
+  const schema = view.state.schema;
+  const rowType = schema.nodes.table_row;
+  const width = context.table.firstChild ? context.table.firstChild.childCount : 1;
+  const cells = Array.from({ length: width }, (_, col) => {
+    const headerCell = context.table.firstChild && context.table.firstChild.child(col);
+    return createTableCell(schema, false, headerCell ? headerCell.attrs.alignment : 'left', '');
+  });
+  const newRow = rowType.create(null, cells);
+  const rows = [];
+  context.table.forEach((row, _offset, index) => {
+    if (after && index === context.rowIndex) rows.push(row, newRow);
+    else if (!after && index === context.rowIndex) rows.push(newRow, row);
+    else rows.push(row);
+  });
+  return replaceTable(view, context, rows);
+}
+
+function deleteTableRow(view) {
+  const context = findTableContext(view.state);
+  if (!context || context.rowIndex === 0 || context.table.childCount <= 2) return false;
+  const rows = [];
+  context.table.forEach((row, _offset, index) => {
+    if (index !== context.rowIndex) rows.push(row);
+  });
+  return replaceTable(view, context, rows);
+}
+
+function addTableColumn(view, after = true) {
+  const context = findTableContext(view.state);
+  if (!context) return false;
+  const schema = view.state.schema;
+  const rows = [];
+  context.table.forEach((row, _offset, rowIndex) => {
+    const cells = [];
+    row.forEach((cell, _cellOffset, colIndex) => {
+      const insert = () => cells.push(createTableCell(schema, rowIndex === 0, cell.attrs.alignment, ''));
+      if (!after && colIndex === context.colIndex) insert();
+      cells.push(cell);
+      if (after && colIndex === context.colIndex) insert();
+    });
+    rows.push(row.type.create(row.attrs, cells));
+  });
+  return replaceTable(view, context, rows);
+}
+
+function deleteTableColumn(view) {
+  const context = findTableContext(view.state);
+  if (!context || context.table.firstChild.childCount <= 1) return false;
+  const rows = [];
+  context.table.forEach((row) => {
+    const cells = [];
+    row.forEach((cell, _cellOffset, colIndex) => {
+      if (colIndex !== context.colIndex) cells.push(cell);
+    });
+    rows.push(row.type.create(row.attrs, cells));
+  });
+  return replaceTable(view, context, rows);
+}
+
+function setTableColumnAlign(view, alignment = 'left') {
+  const context = findTableContext(view.state);
+  if (!context) return false;
+  const rows = [];
+  context.table.forEach((row) => {
+    const cells = [];
+    row.forEach((cell, _cellOffset, colIndex) => {
+      const attrs = colIndex === context.colIndex ? { ...cell.attrs, alignment } : cell.attrs;
+      cells.push(cell.type.create(attrs, cell.content, cell.marks));
+    });
+    rows.push(row.type.create(row.attrs, cells));
+  });
+  return replaceTable(view, context, rows);
+}
+
+function moveTableCell(view, direction) {
+  const context = findTableContext(view.state);
+  if (!context) return false;
+  const width = context.table.firstChild ? context.table.firstChild.childCount : 0;
+  const height = context.table.childCount;
+  if (!width || !height) return false;
+  let row = context.rowIndex;
+  let col = context.colIndex + direction;
+  if (col >= width) {
+    row += 1;
+    col = 0;
+  } else if (col < 0) {
+    row -= 1;
+    col = width - 1;
+  }
+  if (row < 0 || row >= height) return false;
+
+  let pos = context.tablePos + 1;
+  for (let r = 0; r < row; r++) pos += context.table.child(r).nodeSize;
+  pos += 1;
+  const targetRow = context.table.child(row);
+  for (let c = 0; c < col; c++) pos += targetRow.child(c).nodeSize;
+  const selection = Selection.findFrom(view.state.doc.resolve(Math.min(pos + 1, view.state.doc.content.size)), 1, true);
+  if (!selection) return false;
+  const tr = view.state.tr.setSelection(selection);
+  return dispatchAndFocus(view, tr);
 }
 
 function findMarkRange(state, markName) {
@@ -322,6 +499,16 @@ export function runEditorCommand(view, command, payload = {}) {
   if (command === 'codeBlock') return insertCodeBlock(view, payload.language || '');
   if (command === 'mermaid') return insertCodeBlock(view, 'mermaid');
   if (command === 'horizontalRule') return insertHorizontalRule(view);
+  if (command === 'table') return insertTable(view, payload);
+  if (command === 'addTableRowBefore') return addTableRow(view, false);
+  if (command === 'addTableRowAfter') return addTableRow(view, true);
+  if (command === 'deleteTableRow') return deleteTableRow(view);
+  if (command === 'addTableColumnBefore') return addTableColumn(view, false);
+  if (command === 'addTableColumnAfter') return addTableColumn(view, true);
+  if (command === 'deleteTableColumn') return deleteTableColumn(view);
+  if (command === 'tableAlign') return setTableColumnAlign(view, payload.alignment || 'left');
+  if (command === 'nextTableCell') return moveTableCell(view, 1);
+  if (command === 'previousTableCell') return moveTableCell(view, -1);
   if (command === 'setLink') return setLink(view, payload);
   if (command === 'removeLink') return removeLink(view, payload);
   if (command === 'codeLanguage') return updateCodeBlockLanguageAtSelection(view, payload.language || '');
@@ -351,7 +538,8 @@ export function getEditorStateInfo(view) {
   }
 
   const link = getLinkAtSelection(view);
-  return { marks, block, link };
+  const table = findTableContext(state);
+  return { marks, block, link, table };
 }
 
 export function getLinkAtSelection(view) {
