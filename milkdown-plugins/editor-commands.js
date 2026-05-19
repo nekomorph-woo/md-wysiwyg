@@ -470,6 +470,18 @@ function insertPlainText(view, text) {
   return dispatchAndFocus(view, view.state.tr.insertText(value));
 }
 
+function insertImage(view, attrs = {}) {
+  const image = view.state.schema.nodes.image;
+  if (!image) return false;
+  const selectedText = textFromSelection(view.state);
+  const node = image.create({
+    src: attrs.src || '',
+    alt: attrs.alt || selectedText || '',
+    title: attrs.title || '',
+  });
+  return dispatchAndFocus(view, view.state.tr.replaceSelectionWith(node));
+}
+
 function deleteSelection(view) {
   if (!view || view.state.selection.empty) return false;
   return dispatchAndFocus(view, view.state.tr.deleteSelection());
@@ -513,6 +525,7 @@ export function runEditorCommand(view, command, payload = {}) {
   if (command === 'removeLink') return removeLink(view, payload);
   if (command === 'codeLanguage') return updateCodeBlockLanguageAtSelection(view, payload.language || '');
   if (command === 'insertText') return insertPlainText(view, payload.text || '');
+  if (command === 'insertImage') return insertImage(view, payload);
   if (command === 'deleteSelection') return deleteSelection(view);
 
   return false;

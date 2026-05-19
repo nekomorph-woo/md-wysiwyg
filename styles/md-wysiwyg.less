@@ -113,6 +113,32 @@
 
     img { max-width: 100%; }
 
+    .md-wysiwyg-image-node {
+      display: inline-grid;
+      gap: 6px;
+      max-width: 100%;
+      vertical-align: middle;
+
+      &.selected img {
+        outline: 2px solid @background-color-selected;
+        outline-offset: 2px;
+      }
+    }
+
+    .md-wysiwyg-image-editor {
+      grid-template-columns: minmax(120px, 1fr) minmax(100px, 160px) minmax(100px, 160px) max-content;
+      gap: 4px;
+      align-items: center;
+      padding: 6px;
+      background-color: @overlay-background-color;
+      border: 1px solid @overlay-border-color;
+      border-radius: 4px;
+
+      input {
+        min-width: 0;
+      }
+    }
+
     input[type="checkbox"] { margin-right: 6px; }
 
     li[data-item-type="task"] {
