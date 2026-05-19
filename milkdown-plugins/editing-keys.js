@@ -1,8 +1,12 @@
-import { Plugin } from '@milkdown/kit/prose/state';
+import { Plugin, TextSelection } from '@milkdown/kit/prose/state';
 import { $prose } from '@milkdown/kit/utils';
 
 function hasModifier(event) {
   return event.metaKey || event.ctrlKey || event.altKey;
+}
+
+function hasPrimaryModifier(event) {
+  return (event.metaKey || event.ctrlKey) && !event.altKey && !event.shiftKey;
 }
 
 function clipboardText(event) {
@@ -79,6 +83,30 @@ function deleteSelectionOrAdjacent(view, direction) {
   return true;
 }
 
+function moveCursorWithPrimaryArrow(view, event) {
+  if (!hasPrimaryModifier(event)) return false;
+
+  const { state } = view;
+  let selection = null;
+
+  if (event.key === 'ArrowLeft') {
+    selection = TextSelection.create(state.doc, state.selection.$from.start());
+  } else if (event.key === 'ArrowRight') {
+    selection = TextSelection.create(state.doc, state.selection.$from.end());
+  } else if (event.key === 'ArrowUp') {
+    selection = TextSelection.atStart(state.doc);
+  } else if (event.key === 'ArrowDown') {
+    selection = TextSelection.atEnd(state.doc);
+  }
+
+  if (!selection) return false;
+
+  event.preventDefault();
+  view.dispatch(state.tr.setSelection(selection).scrollIntoView());
+  view.focus();
+  return true;
+}
+
 export const editingKeysPlugin = $prose(() => {
   return new Plugin({
     props: {
@@ -91,6 +119,7 @@ export const editingKeysPlugin = $prose(() => {
         return insertClipboardText(view, event);
       },
       handleKeyDown(view, event) {
+        if (moveCursorWithPrimaryArrow(view, event)) return true;
         if (hasModifier(event)) return false;
 
         if (event.key === 'Backspace') {
