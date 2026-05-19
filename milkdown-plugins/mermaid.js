@@ -80,10 +80,20 @@ export function createMermaidView(node, view, getPos) {
     previewButton.classList.toggle('selected', mode === 'preview');
   }
 
+  function nodePos() {
+    if (typeof getPos !== 'function') return -1;
+    try {
+      const pos = getPos();
+      return typeof pos === 'number' ? pos : -1;
+    } catch (_err) {
+      return -1;
+    }
+  }
+
   function showSource() {
     isFocused = true;
     mode = 'source';
-    srcEl.style.display = '';
+    srcEl.style.display = 'block';
     preview.style.display = 'none';
     const text = node.textContent;
     srcEl.value = text;
@@ -93,11 +103,13 @@ export function createMermaidView(node, view, getPos) {
   }
 
   function showPreview() {
+    const source = mode === 'source' ? srcEl.value : node.textContent;
     isFocused = false;
     mode = 'preview';
+    updateNode(source);
     srcEl.style.display = 'none';
-    preview.style.display = '';
-    currentSrc = node.textContent;
+    preview.style.display = 'flex';
+    currentSrc = source;
     updateModeButtons();
     scheduleRender(currentSrc);
   }
@@ -144,9 +156,9 @@ export function createMermaidView(node, view, getPos) {
   }
 
   function updateNode(value) {
-    if (typeof getPos !== 'function') return;
-    const pos = getPos();
-    if (typeof pos !== 'number') return;
+    const pos = nodePos();
+    if (pos < 0) return;
+    if (value === node.textContent) return;
     const content = value ? node.type.schema.text(value) : null;
     const nextNode = node.type.create(node.attrs, content, node.marks);
     view.dispatch(view.state.tr.replaceWith(pos, pos + node.nodeSize, nextNode));
@@ -182,12 +194,7 @@ export function createMermaidView(node, view, getPos) {
   };
   window.addEventListener('md-wysiwyg:theme-changed', themeListener);
 
-  let pos = -1;
-  try {
-    pos = typeof getPos === 'function' ? getPos() : -1;
-  } catch (_err) {
-    pos = -1;
-  }
+  const pos = nodePos();
   const selection = view.state.selection;
   if (typeof pos === 'number' && selection.from > pos && selection.from < pos + node.nodeSize) {
     showSource();
@@ -203,7 +210,7 @@ export function createMermaidView(node, view, getPos) {
       if (newSrc !== currentSrc) {
         currentSrc = newSrc;
         if (isFocused) {
-          if (srcEl.value !== newSrc) srcEl.value = newSrc;
+          if (document.activeElement !== srcEl && srcEl.value !== newSrc) srcEl.value = newSrc;
         } else {
           scheduleRender(newSrc);
         }
@@ -221,7 +228,7 @@ export function createMermaidView(node, view, getPos) {
       showSource();
     },
     stopEvent(event) {
-      if (event.target === sourceButton || event.target === previewButton) return true;
+      if (header.contains(event.target)) return true;
       return isFocused;
     },
     ignoreMutation() {
