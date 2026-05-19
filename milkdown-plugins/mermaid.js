@@ -43,32 +43,62 @@ export function createMermaidView(node, view, getPos) {
   const wrapper = document.createElement('div');
   wrapper.classList.add('mermaid-wrapper');
 
+  const header = document.createElement('div');
+  header.classList.add('mermaid-header');
+  header.contentEditable = 'false';
+  wrapper.appendChild(header);
+
+  const sourceButton = document.createElement('button');
+  sourceButton.type = 'button';
+  sourceButton.className = 'btn mermaid-mode-button';
+  sourceButton.textContent = 'Source';
+  sourceButton.title = 'Edit Mermaid source';
+  header.appendChild(sourceButton);
+
+  const previewButton = document.createElement('button');
+  previewButton.type = 'button';
+  previewButton.className = 'btn mermaid-mode-button';
+  previewButton.textContent = 'Preview';
+  previewButton.title = 'Render Mermaid preview';
+  header.appendChild(previewButton);
+
   const preview = document.createElement('div');
   preview.classList.add('mermaid-preview');
   wrapper.appendChild(preview);
 
   const srcEl = document.createElement('textarea');
   srcEl.classList.add('mermaid-source');
+  srcEl.classList.add('native-key-bindings');
   srcEl.spellcheck = false;
   wrapper.appendChild(srcEl);
 
   let isFocused = false;
+  let mode = 'preview';
+
+  function updateModeButtons() {
+    sourceButton.classList.toggle('selected', mode === 'source');
+    previewButton.classList.toggle('selected', mode === 'preview');
+  }
 
   function showSource() {
     isFocused = true;
+    mode = 'source';
     srcEl.style.display = '';
     preview.style.display = 'none';
     const text = node.textContent;
     srcEl.value = text;
     currentSrc = text;
+    updateModeButtons();
     setTimeout(() => srcEl.focus(), 0);
   }
 
   function showPreview() {
     isFocused = false;
+    mode = 'preview';
     srcEl.style.display = 'none';
     preview.style.display = '';
     currentSrc = node.textContent;
+    updateModeButtons();
     scheduleRender(currentSrc);
   }
 
@@ -86,7 +116,7 @@ export function createMermaidView(node, view, getPos) {
       preview.textContent = '';
       const placeholder = document.createElement('span');
       placeholder.classList.add('mermaid-placeholder');
-      placeholder.textContent = 'Mermaid diagram';
+      placeholder.textContent = 'Click to edit Mermaid diagram';
       preview.appendChild(placeholder);
       return;
     }
@@ -123,6 +153,21 @@ export function createMermaidView(node, view, getPos) {
   }
 
   srcEl.addEventListener('input', () => updateNode(srcEl.value));
+  preview.addEventListener('click', (event) => {
+    event.preventDefault();
+    showSource();
+  });
+  sourceButton.addEventListener('mousedown', (event) => event.preventDefault());
+  previewButton.addEventListener('mousedown', (event) => event.preventDefault());
+  sourceButton.addEventListener('click', (event) => {
+    event.preventDefault();
+    showSource();
+  });
+  previewButton.addEventListener('click', (event) => {
+    event.preventDefault();
+    showPreview();
+    view.focus();
+  });
   srcEl.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') {
       event.preventDefault();
@@ -137,7 +182,18 @@ export function createMermaidView(node, view, getPos) {
   };
   window.addEventListener('md-wysiwyg:theme-changed', themeListener);
 
-  showPreview();
+  let pos = -1;
+  try {
+    pos = typeof getPos === 'function' ? getPos() : -1;
+  } catch (_err) {
+    pos = -1;
+  }
+  const selection = view.state.selection;
+  if (typeof pos === 'number' && selection.from > pos && selection.from < pos + node.nodeSize) {
+    showSource();
+  } else {
+    showPreview();
+  }
 
   return {
     dom: wrapper,
@@ -164,7 +220,8 @@ export function createMermaidView(node, view, getPos) {
     focus() {
       showSource();
     },
-    stopEvent() {
+    stopEvent(event) {
+      if (event.target === sourceButton || event.target === previewButton) return true;
       return isFocused;
     },
     ignoreMutation() {

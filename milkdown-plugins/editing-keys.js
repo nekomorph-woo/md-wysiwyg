@@ -5,6 +5,58 @@ function hasModifier(event) {
   return event.metaKey || event.ctrlKey || event.altKey;
 }
 
+function clipboardText(event) {
+  const text = event.clipboardData && event.clipboardData.getData('text/plain');
+  if (text) return text;
+  if (typeof atom !== 'undefined' && atom.clipboard) return atom.clipboard.read();
+  return '';
+}
+
+function insertClipboardText(view, event) {
+  const text = clipboardText(event);
+  if (!text) return false;
+  event.preventDefault();
+  view.dispatch(view.state.tr.insertText(text).scrollIntoView());
+  view.focus();
+  return true;
+}
+
+function emptyListItemToParagraph(view) {
+  const { state } = view;
+  const { selection } = state;
+  if (!selection.empty) return false;
+
+  const { $from } = selection;
+  let listItemDepth = -1;
+
+  for (let depth = $from.depth; depth > 0; depth--) {
+    if ($from.node(depth).type.name === 'list_item') {
+      listItemDepth = depth;
+      break;
+    }
+  }
+
+  if (listItemDepth < 1) return false;
+
+  const listItem = $from.node(listItemDepth);
+  const paragraph = state.schema.nodes.paragraph;
+  if (!paragraph || listItem.textContent.length > 0) return false;
+
+  const listDepth = listItemDepth - 1;
+  const listNode = $from.node(listDepth);
+  if (!listNode || !/^(bullet_list|ordered_list)$/.test(listNode.type.name)) return false;
+  if (listNode.childCount !== 1) return false;
+
+  const listPos = $from.before(listDepth);
+  view.dispatch(
+    state.tr
+      .replaceWith(listPos, listPos + listNode.nodeSize, paragraph.create())
+      .scrollIntoView()
+  );
+  view.focus();
+  return true;
+}
+
 function deleteSelectionOrAdjacent(view, direction) {
   const { state } = view;
   const { selection } = state;
@@ -13,6 +65,8 @@ function deleteSelectionOrAdjacent(view, direction) {
     view.dispatch(state.tr.deleteSelection().scrollIntoView());
     return true;
   }
+
+  if (emptyListItemToParagraph(view)) return true;
 
   if (direction < 0) {
     if (selection.from <= 1) return false;
@@ -28,6 +82,14 @@ function deleteSelectionOrAdjacent(view, direction) {
 export const editingKeysPlugin = $prose(() => {
   return new Plugin({
     props: {
+      handleDOMEvents: {
+        paste(view, event) {
+          return insertClipboardText(view, event);
+        },
+      },
+      handlePaste(view, event) {
+        return insertClipboardText(view, event);
+      },
       handleKeyDown(view, event) {
         if (hasModifier(event)) return false;
 

@@ -14,18 +14,38 @@
   },
   "activationCommands": {
     "atom-text-editor:not([mini])": [
-      "md-wysiwyg:toggle"
+      "md-wysiwyg:toggle",
+      "md-wysiwyg:edit-link",
+      "md-wysiwyg:copy",
+      "md-wysiwyg:cut",
+      "md-wysiwyg:paste"
     ],
     ".md-wysiwyg-editor": [
-      "md-wysiwyg:toggle"
+      "md-wysiwyg:toggle",
+      "md-wysiwyg:edit-link",
+      "md-wysiwyg:copy",
+      "md-wysiwyg:cut",
+      "md-wysiwyg:paste"
     ],
     ".md-wysiwyg-editor .ProseMirror": [
-      "md-wysiwyg:toggle"
+      "md-wysiwyg:toggle",
+      "md-wysiwyg:edit-link",
+      "md-wysiwyg:copy",
+      "md-wysiwyg:cut",
+      "md-wysiwyg:paste"
     ],
     "atom-workspace": [
-      "md-wysiwyg:toggle"
+      "md-wysiwyg:toggle",
+      "md-wysiwyg:edit-link",
+      "md-wysiwyg:copy",
+      "md-wysiwyg:cut",
+      "md-wysiwyg:paste"
     ]
   },
+  "activationHooks": [
+    "language-gfm:grammar-used",
+    "language-markdown:grammar-used"
+  ],
   "styles": [
     "styles/md-wysiwyg.less",
     "styles/prosemirror-overrides.less",
@@ -63,6 +83,12 @@
       "maximum": 32,
       "title": "Font Size",
       "description": "Custom font size in pixels. 0 means use theme default."
+    },
+    "openMarkdownAsWysiwyg": {
+      "type": "boolean",
+      "default": true,
+      "title": "Open Markdown Files as WYSIWYG",
+      "description": "Open Markdown files in rendered WYSIWYG mode by default. Use Alt+W to switch to source mode."
     },
     "allowUnsafeRendering": {
       "type": "boolean",
