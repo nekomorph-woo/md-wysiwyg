@@ -29,6 +29,26 @@
     }
   }
 
+  .math-header {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 4px;
+    padding: 5px 0;
+  }
+
+  .math-mode-button,
+  .math-symbol-button {
+    height: 24px;
+    padding: 0 8px;
+    line-height: 22px;
+
+    &.selected {
+      color: @text-color-selected;
+      background-color: @background-color-selected;
+    }
+  }
+
   .math-source {
     color: @text-color;
     background-color: @input-background-color;
@@ -48,6 +68,19 @@
   .math-error {
     color: @text-color-error;
     font-family: monospace;
+  }
+
+  .math-error-source {
+    color: @text-color-error;
+    font-family: monospace;
+  }
+
+  .math-error-detail {
+    margin-top: 4px;
+    color: @text-color-error;
+    font-size: 0.9em;
+    font-family: monospace;
+    white-space: pre-wrap;
   }
 
   .math-selected {

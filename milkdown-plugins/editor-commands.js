@@ -13,6 +13,7 @@ const LANGUAGE_OPTIONS = [
 ];
 
 const MERMAID_TEMPLATE = 'flowchart TD\n  A[Start] --> B[End]';
+const MATH_TEMPLATE = 'x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}';
 
 function textFromSelection(state) {
   const { selection } = state;
@@ -482,6 +483,16 @@ function insertImage(view, attrs = {}) {
   return dispatchAndFocus(view, view.state.tr.replaceSelectionWith(node));
 }
 
+function insertMath(view, block = false) {
+  const type = block ? view.state.schema.nodes.math_block : view.state.schema.nodes.math_inline;
+  if (!type) return false;
+  const selectedText = textFromSelection(view.state);
+  const value = selectedText || MATH_TEMPLATE;
+  const node = type.create({ value }, textNode(view.state.schema, value));
+  if (block) return replaceCurrentTextblock(view, node, true);
+  return dispatchAndFocus(view, view.state.tr.replaceSelectionWith(node));
+}
+
 function deleteSelection(view) {
   if (!view || view.state.selection.empty) return false;
   return dispatchAndFocus(view, view.state.tr.deleteSelection());
@@ -526,6 +537,8 @@ export function runEditorCommand(view, command, payload = {}) {
   if (command === 'codeLanguage') return updateCodeBlockLanguageAtSelection(view, payload.language || '');
   if (command === 'insertText') return insertPlainText(view, payload.text || '');
   if (command === 'insertImage') return insertImage(view, payload);
+  if (command === 'mathInline') return insertMath(view, false);
+  if (command === 'mathBlock') return insertMath(view, true);
   if (command === 'deleteSelection') return deleteSelection(view);
 
   return false;

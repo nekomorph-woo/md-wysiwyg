@@ -13,6 +13,8 @@ const ITEMS = [
   { label: 'Task List', keywords: 'todo checkbox task', command: 'taskList' },
   { label: 'Table', keywords: 'table grid gfm', command: 'table', payload: { rows: 3, cols: 3 } },
   { label: 'Image', keywords: 'image picture photo', command: 'insertImage', payload: { src: 'image.png', alt: 'Image' } },
+  { label: 'Inline Math', keywords: 'math latex inline formula', command: 'mathInline' },
+  { label: 'Math Block', keywords: 'math latex block equation formula', command: 'mathBlock' },
   { label: 'Quote', keywords: 'blockquote quote', command: 'blockquote' },
   { label: 'Code Block', keywords: 'code fence block', command: 'codeBlock' },
   { label: 'Mermaid', keywords: 'diagram flowchart graph mermaid', command: 'mermaid' },
