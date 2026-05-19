@@ -6,7 +6,15 @@
     "alt-w": "md-wysiwyg:toggle"
   },
   ".md-wysiwyg-editor .ProseMirror": {
-    "alt-w": "md-wysiwyg:toggle"
+    "alt-w": "md-wysiwyg:toggle",
+    "cmd-k": "md-wysiwyg:edit-link",
+    "ctrl-k": "md-wysiwyg:edit-link",
+    "cmd-c": "md-wysiwyg:copy",
+    "ctrl-c": "md-wysiwyg:copy",
+    "cmd-x": "md-wysiwyg:cut",
+    "ctrl-x": "md-wysiwyg:cut",
+    "cmd-v": "md-wysiwyg:paste",
+    "ctrl-v": "md-wysiwyg:paste"
   },
   "atom-workspace": {
     "alt-w": "md-wysiwyg:toggle"

@@ -18,3 +18,5 @@ export { codeBlockViewPlugin } from './milkdown-plugins/highlight.js';
 export { sourceExpansionPlugin, getDocWithCollapsedSource } from './milkdown-plugins/paragraph-info.js';
 export { taskListInteractionPlugin } from './milkdown-plugins/task-list.js';
 export { editingKeysPlugin } from './milkdown-plugins/editing-keys.js';
+export { slashCommandPlugin } from './milkdown-plugins/slash-command.js';
+export { runEditorCommand, getEditorStateInfo, getLinkAtSelection, selectedPlainText, LANGUAGE_OPTIONS } from './milkdown-plugins/editor-commands.js';

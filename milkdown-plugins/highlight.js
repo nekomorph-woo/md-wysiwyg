@@ -4,6 +4,7 @@ import { Decoration, DecorationSet } from '@milkdown/kit/prose/view';
 import { $prose } from '@milkdown/kit/utils';
 import { $view } from './view';
 import { createMermaidView } from './mermaid';
+import { LANGUAGE_OPTIONS } from './editor-commands';
 
 let hljs = null;
 
@@ -118,20 +119,60 @@ const codeBlockNodeView = $view(codeBlockSchema, () => {
       return createMermaidView(node, view, getPos);
     }
 
+    const wrapper = document.createElement('div');
+    wrapper.className = 'md-wysiwyg-code-block';
+
+    const header = document.createElement('div');
+    header.className = 'md-wysiwyg-code-block-header';
+    header.contentEditable = 'false';
+
+    const select = document.createElement('select');
+    select.className = 'md-wysiwyg-code-language';
+    select.setAttribute('aria-label', 'Code block language');
+
+    LANGUAGE_OPTIONS.forEach((language) => {
+      const option = document.createElement('option');
+      option.value = language;
+      option.textContent = language || 'plaintext';
+      select.appendChild(option);
+    });
+
+    header.appendChild(select);
+    wrapper.appendChild(header);
+
     const pre = document.createElement('pre');
     pre.classList.add('hljs');
     const code = document.createElement('code');
     pre.appendChild(code);
+    wrapper.appendChild(pre);
 
     function updateLanguageClass() {
       const language = resolveLanguage(node.attrs.language);
+      select.value = LANGUAGE_OPTIONS.includes(node.attrs.language) ? node.attrs.language : '';
       code.className = language ? 'language-' + language : '';
     }
+
+    select.addEventListener('mousedown', (event) => {
+      event.stopPropagation();
+    });
+
+    select.addEventListener('change', () => {
+      const pos = getPos();
+      if (typeof pos !== 'number') return;
+      const currentNode = view.state.doc.nodeAt(pos);
+      if (!currentNode || currentNode.type.name !== 'code_block') return;
+      view.dispatch(
+        view.state.tr
+          .setNodeMarkup(pos, currentNode.type, { ...currentNode.attrs, language: select.value }, currentNode.marks)
+          .scrollIntoView()
+      );
+      view.focus();
+    });
 
     updateLanguageClass();
 
     return {
-      dom: pre,
+      dom: wrapper,
       contentDOM: code,
       update(newNode) {
         if (newNode.type.name !== 'code_block') return false;

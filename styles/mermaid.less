@@ -7,6 +7,26 @@
     margin: 0.8em 0;
   }
 
+  .mermaid-header {
+    display: flex;
+    justify-content: flex-end;
+    gap: 4px;
+    padding: 5px 8px;
+    background-color: @pane-item-background-color;
+    border-bottom: 1px solid @base-border-color;
+  }
+
+  .mermaid-mode-button {
+    height: 24px;
+    padding: 0 8px;
+    line-height: 22px;
+
+    &.selected {
+      color: @text-color-selected;
+      background-color: @background-color-selected;
+    }
+  }
+
   .mermaid-preview {
     padding: 16px;
     background-color: @input-background-color;

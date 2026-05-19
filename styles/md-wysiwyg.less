@@ -141,6 +141,115 @@
   }
 }
 
+.md-wysiwyg-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+  padding: 6px 10px;
+  background-color: @tool-panel-background-color;
+  border-bottom: 1px solid @base-border-color;
+
+  .md-wysiwyg-toolbar-button {
+    min-width: 28px;
+    height: 26px;
+    padding: 0 8px;
+    line-height: 24px;
+  }
+
+  .md-wysiwyg-toolbar-button.selected {
+    color: @text-color-selected;
+    background-color: @background-color-selected;
+  }
+}
+
+.md-wysiwyg-heading-select,
+.md-wysiwyg-code-language {
+  height: 26px;
+  color: @text-color;
+  background-color: @input-background-color;
+  border: 1px solid @base-border-color;
+  border-radius: 3px;
+}
+
+.md-wysiwyg-link-popover {
+  position: absolute;
+  z-index: 10;
+  grid-template-columns: minmax(120px, 180px) minmax(180px, 280px) minmax(120px, 180px) repeat(4, max-content);
+  gap: 6px;
+  align-items: center;
+  max-width: calc(100% - 24px);
+  padding: 8px;
+  background-color: @overlay-background-color;
+  border: 1px solid @overlay-border-color;
+  border-radius: 4px;
+  box-shadow: 0 3px 12px fade(#000, 25%);
+
+  input {
+    min-width: 0;
+  }
+}
+
+.md-wysiwyg-slash-menu {
+  position: fixed;
+  z-index: 1000;
+  min-width: 190px;
+  max-height: 260px;
+  overflow-y: auto;
+  padding: 4px;
+  background-color: @overlay-background-color;
+  border: 1px solid @overlay-border-color;
+  border-radius: 4px;
+  box-shadow: 0 3px 12px fade(#000, 25%);
+}
+
+.md-wysiwyg-slash-item {
+  display: block;
+  width: 100%;
+  padding: 5px 8px;
+  color: @text-color;
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-radius: 3px;
+
+  &[aria-selected="true"],
+  &:hover {
+    color: @text-color-selected;
+    background-color: @background-color-selected;
+  }
+}
+
+.md-wysiwyg-slash-empty {
+  padding: 5px 8px;
+  color: @text-color-subtle;
+}
+
+.md-wysiwyg-code-block {
+  margin: 1em 0;
+  border: 1px solid @base-border-color;
+  border-radius: 5px;
+  overflow: hidden;
+  background-color: @input-background-color;
+}
+
+.md-wysiwyg-editor .milkdown-container .md-wysiwyg-code-block pre {
+  margin: 0;
+  border: none;
+  border-radius: 0;
+}
+
+.md-wysiwyg-code-block-header {
+  display: flex;
+  justify-content: flex-end;
+  padding: 5px 8px;
+  background-color: @pane-item-background-color;
+  border-bottom: 1px solid @base-border-color;
+}
+
 .md-wysiwyg-status {
   color: @text-color-subtle;
   font-size: 0.9em;
