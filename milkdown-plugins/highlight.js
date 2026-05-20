@@ -4,6 +4,7 @@ import { Decoration, DecorationSet } from '@milkdown/kit/prose/view';
 import { $prose } from '@milkdown/kit/utils';
 import { $view } from './view';
 import { createMermaidView } from './mermaid';
+import { createFrontMatterView, FRONTMATTER_LANGUAGE } from './frontmatter';
 import { LANGUAGE_OPTIONS } from './editor-commands';
 
 let hljs = null;
@@ -92,7 +93,7 @@ const syntaxHighlightPlugin = $prose((ctx) => {
 
         state.doc.descendants((node, pos) => {
           if (node.type !== codeBlockType) return true;
-          if (node.attrs.language === 'mermaid') return false;
+          if (node.attrs.language === 'mermaid' || node.attrs.language === FRONTMATTER_LANGUAGE) return false;
 
           const language = resolveLanguage(node.attrs.language);
           const ranges = highlightRanges(node.textContent, language);
@@ -117,6 +118,9 @@ const codeBlockNodeView = $view(codeBlockSchema, () => {
   return (node, view, getPos) => {
     if (node.attrs.language === 'mermaid') {
       return createMermaidView(node, view, getPos);
+    }
+    if (node.attrs.language === FRONTMATTER_LANGUAGE) {
+      return createFrontMatterView(node, view, getPos);
     }
 
     const wrapper = document.createElement('div');
@@ -176,7 +180,7 @@ const codeBlockNodeView = $view(codeBlockSchema, () => {
       contentDOM: code,
       update(newNode) {
         if (newNode.type.name !== 'code_block') return false;
-        if (newNode.attrs.language === 'mermaid') return false;
+        if (newNode.attrs.language === 'mermaid' || newNode.attrs.language === FRONTMATTER_LANGUAGE) return false;
         node = newNode;
         updateLanguageClass();
         return true;

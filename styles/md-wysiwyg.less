@@ -421,6 +421,56 @@
   border-bottom: 1px solid @base-border-color;
 }
 
+.md-wysiwyg-frontmatter {
+  margin: 1em 0;
+  overflow: hidden;
+  background-color: @input-background-color;
+  border: 1px solid @base-border-color;
+  border-radius: 5px;
+}
+
+.md-wysiwyg-frontmatter-header {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr) max-content;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 8px;
+  background-color: @pane-item-background-color;
+  border-bottom: 1px solid @base-border-color;
+}
+
+.md-wysiwyg-frontmatter-label {
+  color: @text-color-highlight;
+  font-weight: 600;
+}
+
+.md-wysiwyg-frontmatter-summary {
+  overflow: hidden;
+  color: @text-color-subtle;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.md-wysiwyg-frontmatter-toggle {
+  height: 24px;
+  padding: 0 8px;
+  line-height: 22px;
+}
+
+.md-wysiwyg-frontmatter-source {
+  width: 100%;
+  min-height: 140px;
+  margin: 0;
+  padding: 12px 16px;
+  color: @text-color;
+  background-color: @input-background-color;
+  border: none;
+  outline: none;
+  resize: vertical;
+  font-family: monospace;
+  white-space: pre;
+}
+
 .md-wysiwyg-status {
   color: @text-color-subtle;
   font-size: 0.9em;

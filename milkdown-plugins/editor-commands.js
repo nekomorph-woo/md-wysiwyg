@@ -9,7 +9,7 @@ const MARK_COMMANDS = {
 const LANGUAGE_OPTIONS = [
   '', 'javascript', 'typescript', 'python', 'bash', 'json', 'yaml',
   'css', 'xml', 'markdown', 'sql', 'go', 'rust', 'java', 'cpp',
-  'mermaid', 'plaintext',
+  'mermaid', 'frontmatter', 'plaintext',
 ];
 
 const MERMAID_TEMPLATE = 'flowchart TD\n  A[Start] --> B[End]';
