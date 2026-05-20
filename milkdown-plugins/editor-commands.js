@@ -154,6 +154,20 @@ function insertBlockquote(view) {
   return replaceCurrentTextblock(view, blockquote.createAndFill(null, paragraph));
 }
 
+function insertCallout(view, payload = {}) {
+  const schema = view.state.schema;
+  const blockquote = schema.nodes.blockquote;
+  if (!blockquote) return false;
+
+  const type = String(payload.type || 'NOTE').toUpperCase();
+  const title = payload.title ? ' ' + String(payload.title) : '';
+  const label = paragraphNode(schema, '[!' + type + ']' + title);
+  const body = paragraphNode(schema, textFromSelection(view.state) || 'Callout text');
+  if (!label || !body) return false;
+
+  return replaceCurrentTextblock(view, blockquote.create(null, [label, body]), true);
+}
+
 function insertCodeBlock(view, language = '') {
   const schema = view.state.schema;
   const codeBlock = schema.nodes.code_block;
@@ -539,6 +553,7 @@ export function runEditorCommand(view, command, payload = {}) {
     return insertList(view, command);
   }
   if (command === 'blockquote') return insertBlockquote(view);
+  if (command === 'callout') return insertCallout(view, payload);
   if (command === 'codeBlock') return insertCodeBlock(view, payload.language || '');
   if (command === 'mermaid') return insertCodeBlock(view, 'mermaid');
   if (command === 'horizontalRule') return insertHorizontalRule(view);

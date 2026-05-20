@@ -143,6 +143,45 @@
       color: @text-color-subtle;
     }
 
+    .md-wysiwyg-callout {
+      position: relative;
+      padding: 12px 14px 12px 18px;
+      color: @text-color;
+      background-color: @input-background-color;
+      border: 1px solid @base-border-color;
+      border-left-width: 4px;
+      border-radius: 5px;
+
+      &::before {
+        content: attr(data-callout-label);
+        display: block;
+        margin-bottom: 6px;
+        color: @text-color-highlight;
+        font-weight: 600;
+      }
+
+      > p:first-child {
+        display: none;
+      }
+    }
+
+    .md-wysiwyg-callout-note {
+      border-left-color: @text-color-info;
+    }
+
+    .md-wysiwyg-callout-tip {
+      border-left-color: @text-color-success;
+    }
+
+    .md-wysiwyg-callout-important {
+      border-left-color: @text-color-warning;
+    }
+
+    .md-wysiwyg-callout-warning,
+    .md-wysiwyg-callout-caution {
+      border-left-color: @text-color-error;
+    }
+
     ul, ol {
       padding-left: 2em;
       margin: 0.5em 0;
