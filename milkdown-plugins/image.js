@@ -1,5 +1,5 @@
 import { imageSchema } from '@milkdown/kit/preset/commonmark';
-import { NodeSelection, Plugin } from '@milkdown/kit/prose/state';
+import { NodeSelection, Plugin, Selection } from '@milkdown/kit/prose/state';
 import { $prose } from '@milkdown/kit/utils';
 import { $view } from './view';
 
@@ -121,11 +121,17 @@ const imageNodeView = $view(imageSchema, () => {
     apply.type = 'button';
     apply.className = 'btn btn-primary';
     apply.textContent = 'Apply';
+    const deleteButton = document.createElement('button');
+    deleteButton.type = 'button';
+    deleteButton.className = 'btn';
+    deleteButton.textContent = 'Delete';
+    deleteButton.title = 'Delete image';
 
     form.appendChild(srcInput);
     form.appendChild(altInput);
     form.appendChild(titleInput);
     form.appendChild(apply);
+    form.appendChild(deleteButton);
 
     function sync() {
       img.src = node.attrs.src || '';
@@ -164,6 +170,18 @@ const imageNodeView = $view(imageSchema, () => {
       view.dispatch(view.state.tr.setSelection(NodeSelection.create(view.state.doc, pos)));
     }
 
+    function deleteImage() {
+      if (typeof getPos !== 'function') return;
+      const pos = getPos();
+      if (typeof pos !== 'number') return;
+      let tr = view.state.tr.delete(pos, pos + node.nodeSize);
+      const selection = Selection.findFrom(tr.doc.resolve(Math.min(pos, tr.doc.content.size)), 1, true) ||
+        Selection.findFrom(tr.doc.resolve(Math.max(pos - 1, 0)), -1, true);
+      if (selection) tr = tr.setSelection(selection);
+      view.dispatch(tr.scrollIntoView());
+      view.focus();
+    }
+
     wrapper.addEventListener('click', (event) => {
       event.preventDefault();
       selectImage();
@@ -176,6 +194,7 @@ const imageNodeView = $view(imageSchema, () => {
       event.stopPropagation();
     });
     apply.addEventListener('mousedown', (event) => event.preventDefault());
+    deleteButton.addEventListener('mousedown', (event) => event.preventDefault());
     apply.addEventListener('click', (event) => {
       event.preventDefault();
       event.stopPropagation();
@@ -185,6 +204,11 @@ const imageNodeView = $view(imageSchema, () => {
         title: titleInput.value,
       });
       hideEditor();
+    });
+    deleteButton.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      deleteImage();
     });
 
     sync();
