@@ -24,6 +24,7 @@
     position: sticky;
     top: 0;
     align-self: start;
+    height: calc(100vh - 76px);
     max-height: 100%;
     overflow: auto;
     padding: 14px 8px 18px 12px;
@@ -33,11 +34,19 @@
   }
 
   .md-wysiwyg-outline-title {
+    display: inline-block;
     margin: 0 0 8px 2px;
     color: @text-color-highlight;
     font-size: 0.86em;
     font-weight: 600;
     text-transform: uppercase;
+  }
+
+  .md-wysiwyg-outline-toggle {
+    float: right;
+    height: 22px;
+    padding: 0 7px;
+    line-height: 20px;
   }
 
   .md-wysiwyg-outline-list {
