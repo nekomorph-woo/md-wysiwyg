@@ -1,8 +1,56 @@
+import { Selection, TextSelection } from '@milkdown/kit/prose/state';
+
 let mermaidInstance = null;
 
 function currentTheme() {
-  const themeAttr = document.documentElement.getAttribute('data-theme');
-  return themeAttr === 'light' ? 'default' : 'dark';
+  return 'base';
+}
+
+function currentThemeVariables() {
+  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  if (isLight) {
+    return {
+      background: 'transparent',
+      primaryColor: '#eef6ff',
+      primaryBorderColor: '#5b8ec9',
+      primaryTextColor: '#1f2f46',
+      secondaryColor: '#f4f7ec',
+      secondaryBorderColor: '#89a85a',
+      secondaryTextColor: '#26351e',
+      tertiaryColor: '#fff4e6',
+      tertiaryBorderColor: '#d59b4b',
+      tertiaryTextColor: '#3e2a14',
+      lineColor: '#6f7f95',
+      textColor: '#243447',
+      mainBkg: '#eef6ff',
+      nodeBorder: '#5b8ec9',
+      clusterBkg: '#f8fafc',
+      clusterBorder: '#c6ced8',
+      edgeLabelBackground: '#f8fafc',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+    };
+  }
+
+  return {
+    background: 'transparent',
+    primaryColor: '#26384f',
+    primaryBorderColor: '#78a6d8',
+    primaryTextColor: '#e7edf5',
+    secondaryColor: '#2f3f34',
+    secondaryBorderColor: '#8bb174',
+    secondaryTextColor: '#ecf4e9',
+    tertiaryColor: '#4a3928',
+    tertiaryBorderColor: '#d2a15d',
+    tertiaryTextColor: '#fff1df',
+    lineColor: '#a2adba',
+    textColor: '#e7edf5',
+    mainBkg: '#26384f',
+    nodeBorder: '#78a6d8',
+    clusterBkg: '#202833',
+    clusterBorder: '#4d5a68',
+    edgeLabelBackground: '#202833',
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+  };
 }
 
 function securityLevel() {
@@ -16,6 +64,7 @@ function initializeMermaid(mermaid) {
   mermaid.initialize({
     startOnLoad: false,
     theme: currentTheme(),
+    themeVariables: currentThemeVariables(),
     securityLevel: securityLevel(),
   });
 }
@@ -62,6 +111,13 @@ export function createMermaidView(node, view, getPos) {
   previewButton.title = 'Render Mermaid preview';
   header.appendChild(previewButton);
 
+  const deleteButton = document.createElement('button');
+  deleteButton.type = 'button';
+  deleteButton.className = 'btn mermaid-mode-button mermaid-delete-button';
+  deleteButton.textContent = 'Delete';
+  deleteButton.title = 'Delete Mermaid diagram';
+  header.appendChild(deleteButton);
+
   const preview = document.createElement('div');
   preview.classList.add('mermaid-preview');
   wrapper.appendChild(preview);
@@ -76,14 +132,25 @@ export function createMermaidView(node, view, getPos) {
   let mode = 'preview';
 
   function updateModeButtons() {
+    wrapper.dataset.mode = mode;
     sourceButton.classList.toggle('selected', mode === 'source');
     previewButton.classList.toggle('selected', mode === 'preview');
+  }
+
+  function nodePos() {
+    if (typeof getPos !== 'function') return -1;
+    try {
+      const pos = getPos();
+      return typeof pos === 'number' ? pos : -1;
+    } catch (_err) {
+      return -1;
+    }
   }
 
   function showSource() {
     isFocused = true;
     mode = 'source';
-    srcEl.style.display = '';
+    srcEl.style.display = 'block';
     preview.style.display = 'none';
     const text = node.textContent;
     srcEl.value = text;
@@ -93,11 +160,13 @@ export function createMermaidView(node, view, getPos) {
   }
 
   function showPreview() {
+    const source = mode === 'source' ? srcEl.value : node.textContent;
     isFocused = false;
     mode = 'preview';
+    updateNode(source);
     srcEl.style.display = 'none';
-    preview.style.display = '';
-    currentSrc = node.textContent;
+    preview.style.display = 'flex';
+    currentSrc = source;
     updateModeButtons();
     scheduleRender(currentSrc);
   }
@@ -143,22 +212,40 @@ export function createMermaidView(node, view, getPos) {
     }
   }
 
-  function updateNode(value) {
-    if (typeof getPos !== 'function') return;
-    const pos = getPos();
-    if (typeof pos !== 'number') return;
+  function updateNode(value, preserveSourceSelection = false) {
+    const pos = nodePos();
+    if (pos < 0) return;
+    if (value === node.textContent) return;
     const content = value ? node.type.schema.text(value) : null;
     const nextNode = node.type.create(node.attrs, content, node.marks);
-    view.dispatch(view.state.tr.replaceWith(pos, pos + node.nodeSize, nextNode));
+    let tr = view.state.tr.replaceWith(pos, pos + node.nodeSize, nextNode);
+    if (preserveSourceSelection) {
+      const offset = typeof srcEl.selectionStart === 'number'
+        ? Math.max(0, Math.min(srcEl.selectionStart, value.length))
+        : value.length;
+      tr = tr.setSelection(TextSelection.create(tr.doc, Math.min(pos + 1 + offset, tr.doc.content.size)));
+    }
+    view.dispatch(tr);
   }
 
-  srcEl.addEventListener('input', () => updateNode(srcEl.value));
-  preview.addEventListener('click', (event) => {
-    event.preventDefault();
-    showSource();
+  function deleteNode() {
+    const pos = nodePos();
+    if (pos < 0) return;
+    let tr = view.state.tr.delete(pos, pos + node.nodeSize);
+    const selection = Selection.findFrom(tr.doc.resolve(Math.min(pos, tr.doc.content.size)), 1, true) ||
+      Selection.findFrom(tr.doc.resolve(Math.max(pos - 1, 0)), -1, true);
+    if (selection) tr = tr.setSelection(selection);
+    view.dispatch(tr.scrollIntoView());
+    view.focus();
+  }
+
+  srcEl.addEventListener('input', () => {
+    currentSrc = srcEl.value;
+    updateNode(srcEl.value, true);
   });
   sourceButton.addEventListener('mousedown', (event) => event.preventDefault());
   previewButton.addEventListener('mousedown', (event) => event.preventDefault());
+  deleteButton.addEventListener('mousedown', (event) => event.preventDefault());
   sourceButton.addEventListener('click', (event) => {
     event.preventDefault();
     showSource();
@@ -167,6 +254,10 @@ export function createMermaidView(node, view, getPos) {
     event.preventDefault();
     showPreview();
     view.focus();
+  });
+  deleteButton.addEventListener('click', (event) => {
+    event.preventDefault();
+    deleteNode();
   });
   srcEl.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') {
@@ -182,12 +273,7 @@ export function createMermaidView(node, view, getPos) {
   };
   window.addEventListener('md-wysiwyg:theme-changed', themeListener);
 
-  let pos = -1;
-  try {
-    pos = typeof getPos === 'function' ? getPos() : -1;
-  } catch (_err) {
-    pos = -1;
-  }
+  const pos = nodePos();
   const selection = view.state.selection;
   if (typeof pos === 'number' && selection.from > pos && selection.from < pos + node.nodeSize) {
     showSource();
@@ -202,8 +288,8 @@ export function createMermaidView(node, view, getPos) {
       const newSrc = newNode.textContent;
       if (newSrc !== currentSrc) {
         currentSrc = newSrc;
-        if (isFocused) {
-          if (srcEl.value !== newSrc) srcEl.value = newSrc;
+        if (mode === 'source') {
+          if (document.activeElement !== srcEl && srcEl.value !== newSrc) srcEl.value = newSrc;
         } else {
           scheduleRender(newSrc);
         }
@@ -215,17 +301,18 @@ export function createMermaidView(node, view, getPos) {
       showSource();
     },
     deselectNode() {
+      if (mode === 'source') return;
       showPreview();
     },
     focus() {
       showSource();
     },
     stopEvent(event) {
-      if (event.target === sourceButton || event.target === previewButton) return true;
+      if (header.contains(event.target)) return true;
       return isFocused;
     },
     ignoreMutation() {
-      return false;
+      return true;
     },
     destroy() {
       if (renderTimeout) clearTimeout(renderTimeout);
