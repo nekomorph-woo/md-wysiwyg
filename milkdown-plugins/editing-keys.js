@@ -1,13 +1,9 @@
-import { Plugin, TextSelection } from '@milkdown/kit/prose/state';
+import { Plugin, Selection, TextSelection } from '@milkdown/kit/prose/state';
 import { $prose } from '@milkdown/kit/utils';
 import { runEditorCommand } from './editor-commands';
 
 function hasModifier(event) {
   return event.metaKey || event.ctrlKey || event.altKey;
-}
-
-function hasPrimaryModifier(event) {
-  return (event.metaKey || event.ctrlKey) && !event.altKey && !event.shiftKey;
 }
 
 function clipboardText(event) {
@@ -84,20 +80,34 @@ function deleteSelectionOrAdjacent(view, direction) {
   return true;
 }
 
-function moveCursorWithPrimaryArrow(view, event) {
-  if (!hasPrimaryModifier(event)) return false;
+function slashCommandIsOpen() {
+  const menu = typeof document !== 'undefined'
+    ? document.querySelector('.md-wysiwyg-slash-menu')
+    : null;
+  if (!menu) return false;
+  return menu.style.display !== 'none';
+}
+
+function moveCursorWithPlainArrow(view, event) {
+  if (hasModifier(event) || event.shiftKey || slashCommandIsOpen()) return false;
+  if (!/^Arrow(Left|Right|Up|Down)$/.test(event.key)) return false;
 
   const { state } = view;
   let selection = null;
+  const { from, to, empty } = state.selection;
 
   if (event.key === 'ArrowLeft') {
-    selection = TextSelection.create(state.doc, state.selection.$from.start());
+    const pos = empty ? from - 1 : from;
+    if (pos < 0) return false;
+    selection = Selection.near(state.doc.resolve(pos), -1);
   } else if (event.key === 'ArrowRight') {
-    selection = TextSelection.create(state.doc, state.selection.$from.end());
+    const pos = empty ? to + 1 : to;
+    if (pos > state.doc.content.size) return false;
+    selection = Selection.near(state.doc.resolve(pos), 1);
   } else if (event.key === 'ArrowUp') {
-    selection = TextSelection.atStart(state.doc);
+    selection = selectionFromVerticalMovement(view, -1);
   } else if (event.key === 'ArrowDown') {
-    selection = TextSelection.atEnd(state.doc);
+    selection = selectionFromVerticalMovement(view, 1);
   }
 
   if (!selection) return false;
@@ -106,6 +116,24 @@ function moveCursorWithPrimaryArrow(view, event) {
   view.dispatch(state.tr.setSelection(selection).scrollIntoView());
   view.focus();
   return true;
+}
+
+function selectionFromVerticalMovement(view, direction) {
+  const { state } = view;
+  try {
+    const coords = view.coordsAtPos(state.selection.head);
+    const lineHeight = parseFloat(window.getComputedStyle(view.dom).lineHeight) || 20;
+    const target = view.posAtCoords({
+      left: coords.left,
+      top: direction < 0 ? coords.top - lineHeight : coords.bottom + lineHeight,
+    });
+    if (target && typeof target.pos === 'number') {
+      return Selection.near(state.doc.resolve(target.pos), direction);
+    }
+  } catch (_err) {
+    return direction < 0 ? TextSelection.atStart(state.doc) : TextSelection.atEnd(state.doc);
+  }
+  return direction < 0 ? TextSelection.atStart(state.doc) : TextSelection.atEnd(state.doc);
 }
 
 export const editingKeysPlugin = $prose(() => {
@@ -129,7 +157,7 @@ export const editingKeysPlugin = $prose(() => {
           return handled;
         }
 
-        if (moveCursorWithPrimaryArrow(view, event)) return true;
+        if (moveCursorWithPlainArrow(view, event)) return true;
         if (hasModifier(event)) return false;
 
         if (event.key === 'Backspace') {

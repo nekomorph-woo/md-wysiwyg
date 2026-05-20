@@ -1,3 +1,5 @@
+import { TextSelection } from '@milkdown/kit/prose/state';
+
 let mermaidInstance = null;
 
 function currentTheme() {
@@ -76,6 +78,7 @@ export function createMermaidView(node, view, getPos) {
   let mode = 'preview';
 
   function updateModeButtons() {
+    wrapper.dataset.mode = mode;
     sourceButton.classList.toggle('selected', mode === 'source');
     previewButton.classList.toggle('selected', mode === 'preview');
   }
@@ -155,16 +158,26 @@ export function createMermaidView(node, view, getPos) {
     }
   }
 
-  function updateNode(value) {
+  function updateNode(value, preserveSourceSelection = false) {
     const pos = nodePos();
     if (pos < 0) return;
     if (value === node.textContent) return;
     const content = value ? node.type.schema.text(value) : null;
     const nextNode = node.type.create(node.attrs, content, node.marks);
-    view.dispatch(view.state.tr.replaceWith(pos, pos + node.nodeSize, nextNode));
+    let tr = view.state.tr.replaceWith(pos, pos + node.nodeSize, nextNode);
+    if (preserveSourceSelection) {
+      const offset = typeof srcEl.selectionStart === 'number'
+        ? Math.max(0, Math.min(srcEl.selectionStart, value.length))
+        : value.length;
+      tr = tr.setSelection(TextSelection.create(tr.doc, Math.min(pos + 1 + offset, tr.doc.content.size)));
+    }
+    view.dispatch(tr);
   }
 
-  srcEl.addEventListener('input', () => updateNode(srcEl.value));
+  srcEl.addEventListener('input', () => {
+    currentSrc = srcEl.value;
+    updateNode(srcEl.value, true);
+  });
   preview.addEventListener('click', (event) => {
     event.preventDefault();
     showSource();
@@ -209,7 +222,7 @@ export function createMermaidView(node, view, getPos) {
       const newSrc = newNode.textContent;
       if (newSrc !== currentSrc) {
         currentSrc = newSrc;
-        if (isFocused) {
+        if (mode === 'source') {
           if (document.activeElement !== srcEl && srcEl.value !== newSrc) srcEl.value = newSrc;
         } else {
           scheduleRender(newSrc);
@@ -222,6 +235,7 @@ export function createMermaidView(node, view, getPos) {
       showSource();
     },
     deselectNode() {
+      if (mode === 'source') return;
       showPreview();
     },
     focus() {
@@ -232,7 +246,7 @@ export function createMermaidView(node, view, getPos) {
       return isFocused;
     },
     ignoreMutation() {
-      return false;
+      return true;
     },
     destroy() {
       if (renderTimeout) clearTimeout(renderTimeout);

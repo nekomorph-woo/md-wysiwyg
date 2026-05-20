@@ -233,6 +233,21 @@ function replaceTable(view, context, rows) {
   return dispatchAndFocus(view, tr);
 }
 
+function deleteTable(view) {
+  const context = findTableContext(view.state);
+  if (!context) return false;
+  const paragraph = view.state.schema.nodes.paragraph;
+  if (!paragraph) return false;
+
+  let tr = view.state.tr.replaceWith(
+    context.tablePos,
+    context.tablePos + context.table.nodeSize,
+    paragraph.create()
+  );
+  tr = tr.setSelection(TextSelection.create(tr.doc, Math.min(context.tablePos + 1, tr.doc.content.size)));
+  return dispatchAndFocus(view, tr);
+}
+
 function insertTable(view, payload = {}) {
   const rows = Number(payload.rows || 3);
   const cols = Number(payload.cols || 3);
@@ -529,6 +544,7 @@ export function runEditorCommand(view, command, payload = {}) {
   if (command === 'addTableColumnBefore') return addTableColumn(view, false);
   if (command === 'addTableColumnAfter') return addTableColumn(view, true);
   if (command === 'deleteTableColumn') return deleteTableColumn(view);
+  if (command === 'deleteTable') return deleteTable(view);
   if (command === 'tableAlign') return setTableColumnAlign(view, payload.alignment || 'left');
   if (command === 'nextTableCell') return moveTableCell(view, 1);
   if (command === 'previousTableCell') return moveTableCell(view, -1);
