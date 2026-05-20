@@ -1,4 +1,4 @@
-import { Selection, TextSelection } from '@milkdown/kit/prose/state';
+import { NodeSelection, Selection, TextSelection } from '@milkdown/kit/prose/state';
 
 const MARK_COMMANDS = {
   strong: 'strong',
@@ -495,7 +495,12 @@ function insertImage(view, attrs = {}) {
     alt: attrs.alt || selectedText || '',
     title: attrs.title || '',
   });
-  return dispatchAndFocus(view, view.state.tr.replaceSelectionWith(node));
+  const { from } = view.state.selection;
+  let tr = view.state.tr.replaceSelectionWith(node);
+  if (attrs.select !== false) {
+    tr = tr.setSelection(NodeSelection.create(tr.doc, Math.min(from, tr.doc.content.size)));
+  }
+  return dispatchAndFocus(view, tr);
 }
 
 function insertMath(view, block = false) {

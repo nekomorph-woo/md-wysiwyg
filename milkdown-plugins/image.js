@@ -1,5 +1,5 @@
 import { imageSchema } from '@milkdown/kit/preset/commonmark';
-import { Plugin } from '@milkdown/kit/prose/state';
+import { NodeSelection, Plugin } from '@milkdown/kit/prose/state';
 import { $prose } from '@milkdown/kit/utils';
 import { $view } from './view';
 
@@ -157,13 +157,28 @@ const imageNodeView = $view(imageSchema, () => {
       wrapper.classList.remove('selected');
     }
 
+    function selectImage() {
+      if (typeof getPos !== 'function') return;
+      const pos = getPos();
+      if (typeof pos !== 'number') return;
+      view.dispatch(view.state.tr.setSelection(NodeSelection.create(view.state.doc, pos)));
+    }
+
     wrapper.addEventListener('click', (event) => {
       event.preventDefault();
+      selectImage();
       showEditor();
+    });
+    form.addEventListener('mousedown', (event) => {
+      event.stopPropagation();
+    });
+    form.addEventListener('click', (event) => {
+      event.stopPropagation();
     });
     apply.addEventListener('mousedown', (event) => event.preventDefault());
     apply.addEventListener('click', (event) => {
       event.preventDefault();
+      event.stopPropagation();
       update({
         src: srcInput.value.trim(),
         alt: altInput.value,

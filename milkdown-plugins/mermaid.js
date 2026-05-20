@@ -1,10 +1,56 @@
-import { TextSelection } from '@milkdown/kit/prose/state';
+import { Selection, TextSelection } from '@milkdown/kit/prose/state';
 
 let mermaidInstance = null;
 
 function currentTheme() {
-  const themeAttr = document.documentElement.getAttribute('data-theme');
-  return themeAttr === 'light' ? 'default' : 'dark';
+  return 'base';
+}
+
+function currentThemeVariables() {
+  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  if (isLight) {
+    return {
+      background: 'transparent',
+      primaryColor: '#eef6ff',
+      primaryBorderColor: '#5b8ec9',
+      primaryTextColor: '#1f2f46',
+      secondaryColor: '#f4f7ec',
+      secondaryBorderColor: '#89a85a',
+      secondaryTextColor: '#26351e',
+      tertiaryColor: '#fff4e6',
+      tertiaryBorderColor: '#d59b4b',
+      tertiaryTextColor: '#3e2a14',
+      lineColor: '#6f7f95',
+      textColor: '#243447',
+      mainBkg: '#eef6ff',
+      nodeBorder: '#5b8ec9',
+      clusterBkg: '#f8fafc',
+      clusterBorder: '#c6ced8',
+      edgeLabelBackground: '#f8fafc',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+    };
+  }
+
+  return {
+    background: 'transparent',
+    primaryColor: '#26384f',
+    primaryBorderColor: '#78a6d8',
+    primaryTextColor: '#e7edf5',
+    secondaryColor: '#2f3f34',
+    secondaryBorderColor: '#8bb174',
+    secondaryTextColor: '#ecf4e9',
+    tertiaryColor: '#4a3928',
+    tertiaryBorderColor: '#d2a15d',
+    tertiaryTextColor: '#fff1df',
+    lineColor: '#a2adba',
+    textColor: '#e7edf5',
+    mainBkg: '#26384f',
+    nodeBorder: '#78a6d8',
+    clusterBkg: '#202833',
+    clusterBorder: '#4d5a68',
+    edgeLabelBackground: '#202833',
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+  };
 }
 
 function securityLevel() {
@@ -18,6 +64,7 @@ function initializeMermaid(mermaid) {
   mermaid.initialize({
     startOnLoad: false,
     theme: currentTheme(),
+    themeVariables: currentThemeVariables(),
     securityLevel: securityLevel(),
   });
 }
@@ -63,6 +110,13 @@ export function createMermaidView(node, view, getPos) {
   previewButton.textContent = 'Preview';
   previewButton.title = 'Render Mermaid preview';
   header.appendChild(previewButton);
+
+  const deleteButton = document.createElement('button');
+  deleteButton.type = 'button';
+  deleteButton.className = 'btn mermaid-mode-button mermaid-delete-button';
+  deleteButton.textContent = 'Delete';
+  deleteButton.title = 'Delete Mermaid diagram';
+  header.appendChild(deleteButton);
 
   const preview = document.createElement('div');
   preview.classList.add('mermaid-preview');
@@ -174,6 +228,17 @@ export function createMermaidView(node, view, getPos) {
     view.dispatch(tr);
   }
 
+  function deleteNode() {
+    const pos = nodePos();
+    if (pos < 0) return;
+    let tr = view.state.tr.delete(pos, pos + node.nodeSize);
+    const selection = Selection.findFrom(tr.doc.resolve(Math.min(pos, tr.doc.content.size)), 1, true) ||
+      Selection.findFrom(tr.doc.resolve(Math.max(pos - 1, 0)), -1, true);
+    if (selection) tr = tr.setSelection(selection);
+    view.dispatch(tr.scrollIntoView());
+    view.focus();
+  }
+
   srcEl.addEventListener('input', () => {
     currentSrc = srcEl.value;
     updateNode(srcEl.value, true);
@@ -184,6 +249,7 @@ export function createMermaidView(node, view, getPos) {
   });
   sourceButton.addEventListener('mousedown', (event) => event.preventDefault());
   previewButton.addEventListener('mousedown', (event) => event.preventDefault());
+  deleteButton.addEventListener('mousedown', (event) => event.preventDefault());
   sourceButton.addEventListener('click', (event) => {
     event.preventDefault();
     showSource();
@@ -192,6 +258,10 @@ export function createMermaidView(node, view, getPos) {
     event.preventDefault();
     showPreview();
     view.focus();
+  });
+  deleteButton.addEventListener('click', (event) => {
+    event.preventDefault();
+    deleteNode();
   });
   srcEl.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') {
