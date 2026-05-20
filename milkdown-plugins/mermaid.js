@@ -243,10 +243,6 @@ export function createMermaidView(node, view, getPos) {
     currentSrc = srcEl.value;
     updateNode(srcEl.value, true);
   });
-  preview.addEventListener('click', (event) => {
-    event.preventDefault();
-    showSource();
-  });
   sourceButton.addEventListener('mousedown', (event) => event.preventDefault());
   previewButton.addEventListener('mousedown', (event) => event.preventDefault());
   deleteButton.addEventListener('mousedown', (event) => event.preventDefault());
