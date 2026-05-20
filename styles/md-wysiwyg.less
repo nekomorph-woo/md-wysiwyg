@@ -9,6 +9,70 @@
   background-color: @app-background-color;
   padding: 0;
 
+  .md-wysiwyg-main {
+    flex: 1;
+    display: grid;
+    grid-template-columns: minmax(150px, 220px) minmax(0, 1fr);
+    min-height: 0;
+
+    &.no-outline {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  .md-wysiwyg-outline {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    max-height: 100%;
+    overflow: auto;
+    padding: 14px 8px 18px 12px;
+    color: @text-color-subtle;
+    background-color: @tool-panel-background-color;
+    border-right: 1px solid @base-border-color;
+  }
+
+  .md-wysiwyg-outline-title {
+    margin: 0 0 8px 2px;
+    color: @text-color-highlight;
+    font-size: 0.86em;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  .md-wysiwyg-outline-list {
+    display: grid;
+    gap: 2px;
+  }
+
+  .md-wysiwyg-outline-item {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    padding: 4px 6px;
+    overflow: hidden;
+    color: @text-color-subtle;
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    background: transparent;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+
+    &[data-level="2"] { padding-left: 16px; }
+    &[data-level="3"] { padding-left: 26px; }
+    &[data-level="4"] { padding-left: 36px; }
+    &[data-level="5"] { padding-left: 46px; }
+    &[data-level="6"] { padding-left: 56px; }
+
+    &:hover,
+    &.selected {
+      color: @text-color-selected;
+      background-color: @background-color-selected;
+    }
+  }
+
   .milkdown-container {
     flex: 1;
     padding: 20px 40px;
