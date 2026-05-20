@@ -471,6 +471,79 @@
   white-space: pre;
 }
 
+.md-wysiwyg-footnote-ref {
+  position: relative;
+  display: inline-block;
+}
+
+.md-wysiwyg-footnote-ref-button {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  color: @text-color-info;
+  background-color: @input-background-color;
+  border: 1px solid @base-border-color;
+  border-radius: 9px;
+  font-size: 0.78em;
+  line-height: 16px;
+  cursor: pointer;
+}
+
+.md-wysiwyg-footnote-popover {
+  position: absolute;
+  z-index: 10;
+  left: 0;
+  top: 22px;
+  grid-template-columns: minmax(180px, 260px) max-content;
+  gap: 6px;
+  align-items: center;
+  padding: 8px;
+  color: @text-color;
+  background-color: @overlay-background-color;
+  border: 1px solid @overlay-border-color;
+  border-radius: 4px;
+  box-shadow: 0 3px 12px fade(#000, 25%);
+}
+
+.md-wysiwyg-footnote-summary {
+  font-size: 0.9em;
+  line-height: 1.35;
+}
+
+.md-wysiwyg-footnote-jump,
+.md-wysiwyg-footnote-back {
+  height: 24px;
+  padding: 0 8px;
+  line-height: 22px;
+}
+
+.md-wysiwyg-footnote-def {
+  margin: 1em 0;
+  overflow: hidden;
+  background-color: @input-background-color;
+  border: 1px solid @base-border-color;
+  border-radius: 5px;
+}
+
+.md-wysiwyg-footnote-def-header {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  background-color: @pane-item-background-color;
+  border-bottom: 1px solid @base-border-color;
+}
+
+.md-wysiwyg-footnote-def-label {
+  color: @text-color-highlight;
+  font-weight: 600;
+}
+
+.md-wysiwyg-footnote-def-content {
+  padding: 0 12px;
+}
+
 .md-wysiwyg-status {
   color: @text-color-subtle;
   font-size: 0.9em;

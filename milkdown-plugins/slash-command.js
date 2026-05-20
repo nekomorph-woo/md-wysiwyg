@@ -15,6 +15,7 @@ const ITEMS = [
   { label: 'Image', keywords: 'image picture photo', command: 'insertImage', payload: { src: 'image.png', alt: 'Image' } },
   { label: 'Inline Math', keywords: 'math latex inline formula', command: 'mathInline' },
   { label: 'Math Block', keywords: 'math latex block equation formula', command: 'mathBlock' },
+  { label: 'Footnote', keywords: 'footnote note reference definition', command: 'footnote' },
   { label: 'Quote', keywords: 'blockquote quote', command: 'blockquote' },
   { label: 'Note Callout', keywords: 'callout admonition note info', command: 'callout', payload: { type: 'NOTE' } },
   { label: 'Tip Callout', keywords: 'callout admonition tip success', command: 'callout', payload: { type: 'TIP' } },

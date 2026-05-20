@@ -527,6 +527,41 @@ function insertMath(view, block = false) {
   return dispatchAndFocus(view, view.state.tr.replaceSelectionWith(node));
 }
 
+function nextFootnoteLabel(doc) {
+  const labels = new Set();
+  doc.descendants((node) => {
+    if (
+      (node.type.name === 'footnote_reference' || node.type.name === 'footnote_definition') &&
+      node.attrs.label
+    ) {
+      labels.add(node.attrs.label);
+    }
+    return true;
+  });
+
+  let index = 1;
+  while (labels.has('fn-' + index)) index++;
+  return 'fn-' + index;
+}
+
+function insertFootnote(view) {
+  const schema = view.state.schema;
+  const referenceType = schema.nodes.footnote_reference;
+  const definitionType = schema.nodes.footnote_definition;
+  const paragraph = schema.nodes.paragraph;
+  if (!referenceType || !definitionType || !paragraph) return false;
+
+  const label = nextFootnoteLabel(view.state.doc);
+  const reference = referenceType.create({ label });
+  const definitionText = textNode(schema, 'Footnote text');
+  const definition = definitionType.create({ label }, paragraph.create(null, definitionText));
+  const insertFrom = view.state.selection.from;
+  let tr = view.state.tr.replaceSelectionWith(reference);
+  tr = tr.insert(tr.doc.content.size, definition);
+  tr = tr.setSelection(Selection.near(tr.doc.resolve(Math.min(insertFrom + reference.nodeSize, tr.doc.content.size)), 1));
+  return dispatchAndFocus(view, tr);
+}
+
 function deleteSelection(view) {
   if (!view || view.state.selection.empty) return false;
   return dispatchAndFocus(view, view.state.tr.deleteSelection());
@@ -575,6 +610,7 @@ export function runEditorCommand(view, command, payload = {}) {
   if (command === 'insertImage') return insertImage(view, payload);
   if (command === 'mathInline') return insertMath(view, false);
   if (command === 'mathBlock') return insertMath(view, true);
+  if (command === 'footnote') return insertFootnote(view);
   if (command === 'deleteSelection') return deleteSelection(view);
 
   return false;
