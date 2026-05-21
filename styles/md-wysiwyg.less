@@ -5,12 +5,87 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  overflow: auto;
+  min-height: 0;
+  overflow: hidden;
   background-color: @app-background-color;
   padding: 0;
 
+  .md-wysiwyg-main {
+    flex: 1;
+    display: grid;
+    grid-template-columns: minmax(150px, 220px) minmax(0, 1fr);
+    min-height: 0;
+    overflow: hidden;
+
+    &.no-outline {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  .md-wysiwyg-outline {
+    align-self: start;
+    height: 100%;
+    min-height: 0;
+    overflow: auto;
+    padding: 14px 8px 18px 12px;
+    color: @text-color-subtle;
+    background-color: @tool-panel-background-color;
+    border-right: 1px solid @base-border-color;
+  }
+
+  .md-wysiwyg-outline-title {
+    display: inline-block;
+    margin: 0 0 8px 2px;
+    color: @text-color-highlight;
+    font-size: 0.86em;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  .md-wysiwyg-outline-toggle {
+    float: right;
+    height: 22px;
+    padding: 0 7px;
+    line-height: 20px;
+  }
+
+  .md-wysiwyg-outline-list {
+    display: grid;
+    gap: 2px;
+  }
+
+  .md-wysiwyg-outline-item {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    padding: 4px 6px;
+    overflow: hidden;
+    color: @text-color-subtle;
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    background: transparent;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+
+    &[data-level="2"] { padding-left: 16px; }
+    &[data-level="3"] { padding-left: 26px; }
+    &[data-level="4"] { padding-left: 36px; }
+    &[data-level="5"] { padding-left: 46px; }
+    &[data-level="6"] { padding-left: 56px; }
+
+    &:hover,
+    &.selected {
+      color: @text-color-selected;
+      background-color: @background-color-selected;
+    }
+  }
+
   .milkdown-container {
     flex: 1;
+    min-height: 0;
+    overflow: auto;
     padding: 20px 40px;
     margin: 0 auto;
     width: 100%;
@@ -77,6 +152,45 @@
       padding-left: 16px;
       margin: 0.8em 0;
       color: @text-color-subtle;
+    }
+
+    .md-wysiwyg-callout {
+      position: relative;
+      padding: 12px 14px 12px 18px;
+      color: @text-color;
+      background-color: @input-background-color;
+      border: 1px solid @base-border-color;
+      border-left-width: 4px;
+      border-radius: 5px;
+
+      &::before {
+        content: attr(data-callout-label);
+        display: block;
+        margin-bottom: 6px;
+        color: @text-color-highlight;
+        font-weight: 600;
+      }
+
+      > p:first-child {
+        display: none;
+      }
+    }
+
+    .md-wysiwyg-callout-note {
+      border-left-color: @text-color-info;
+    }
+
+    .md-wysiwyg-callout-tip {
+      border-left-color: @text-color-success;
+    }
+
+    .md-wysiwyg-callout-important {
+      border-left-color: @text-color-warning;
+    }
+
+    .md-wysiwyg-callout-warning,
+    .md-wysiwyg-callout-caution {
+      border-left-color: @text-color-error;
     }
 
     ul, ol {
@@ -318,6 +432,129 @@
   border-bottom: 1px solid @base-border-color;
 }
 
+.md-wysiwyg-frontmatter {
+  margin: 1em 0;
+  overflow: hidden;
+  background-color: @input-background-color;
+  border: 1px solid @base-border-color;
+  border-radius: 5px;
+}
+
+.md-wysiwyg-frontmatter-header {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr) max-content;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 8px;
+  background-color: @pane-item-background-color;
+  border-bottom: 1px solid @base-border-color;
+}
+
+.md-wysiwyg-frontmatter-label {
+  color: @text-color-highlight;
+  font-weight: 600;
+}
+
+.md-wysiwyg-frontmatter-summary {
+  overflow: hidden;
+  color: @text-color-subtle;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.md-wysiwyg-frontmatter-toggle {
+  height: 24px;
+  padding: 0 8px;
+  line-height: 22px;
+}
+
+.md-wysiwyg-frontmatter-source {
+  width: 100%;
+  min-height: 140px;
+  margin: 0;
+  padding: 12px 16px;
+  color: @text-color;
+  background-color: @input-background-color;
+  border: none;
+  outline: none;
+  resize: vertical;
+  font-family: monospace;
+  white-space: pre;
+}
+
+.md-wysiwyg-footnote-ref {
+  position: relative;
+  display: inline-block;
+}
+
+.md-wysiwyg-footnote-ref-button {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  color: @text-color-info;
+  background-color: @input-background-color;
+  border: 1px solid @base-border-color;
+  border-radius: 9px;
+  font-size: 0.78em;
+  line-height: 16px;
+  cursor: pointer;
+}
+
+.md-wysiwyg-footnote-popover {
+  position: absolute;
+  z-index: 10;
+  left: 0;
+  top: 22px;
+  grid-template-columns: minmax(180px, 260px) max-content;
+  gap: 6px;
+  align-items: center;
+  padding: 8px;
+  color: @text-color;
+  background-color: @overlay-background-color;
+  border: 1px solid @overlay-border-color;
+  border-radius: 4px;
+  box-shadow: 0 3px 12px fade(#000, 25%);
+}
+
+.md-wysiwyg-footnote-summary {
+  font-size: 0.9em;
+  line-height: 1.35;
+}
+
+.md-wysiwyg-footnote-jump,
+.md-wysiwyg-footnote-back {
+  height: 24px;
+  padding: 0 8px;
+  line-height: 22px;
+}
+
+.md-wysiwyg-footnote-def {
+  margin: 1em 0;
+  overflow: hidden;
+  background-color: @input-background-color;
+  border: 1px solid @base-border-color;
+  border-radius: 5px;
+}
+
+.md-wysiwyg-footnote-def-header {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  background-color: @pane-item-background-color;
+  border-bottom: 1px solid @base-border-color;
+}
+
+.md-wysiwyg-footnote-def-label {
+  color: @text-color-highlight;
+  font-weight: 600;
+}
+
+.md-wysiwyg-footnote-def-content {
+  padding: 0 12px;
+}
+
 .md-wysiwyg-status {
   color: @text-color-subtle;
   font-size: 0.9em;
@@ -326,11 +563,11 @@
 }
 
 .md-wysiwyg-inline-status {
-  position: sticky;
+  position: absolute;
   right: 16px;
   bottom: 10px;
-  align-self: flex-end;
-  margin: 8px 16px 10px;
+  z-index: 8;
+  margin: 0;
   padding: 3px 8px;
   color: @text-color-subtle;
   background-color: fade(@app-background-color, 88%);

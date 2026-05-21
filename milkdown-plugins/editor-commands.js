@@ -9,7 +9,7 @@ const MARK_COMMANDS = {
 const LANGUAGE_OPTIONS = [
   '', 'javascript', 'typescript', 'python', 'bash', 'json', 'yaml',
   'css', 'xml', 'markdown', 'sql', 'go', 'rust', 'java', 'cpp',
-  'mermaid', 'plaintext',
+  'mermaid', 'frontmatter', 'plaintext',
 ];
 
 const MERMAID_TEMPLATE = 'flowchart TD\n  A[Start] --> B[End]';
@@ -152,6 +152,20 @@ function insertBlockquote(view) {
   const paragraph = paragraphNode(schema, textFromSelection(view.state) || 'Quote');
   if (!paragraph) return false;
   return replaceCurrentTextblock(view, blockquote.createAndFill(null, paragraph));
+}
+
+function insertCallout(view, payload = {}) {
+  const schema = view.state.schema;
+  const blockquote = schema.nodes.blockquote;
+  if (!blockquote) return false;
+
+  const type = String(payload.type || 'NOTE').toUpperCase();
+  const title = payload.title ? ' ' + String(payload.title) : '';
+  const label = paragraphNode(schema, '[!' + type + ']' + title);
+  const body = paragraphNode(schema, textFromSelection(view.state) || 'Callout text');
+  if (!label || !body) return false;
+
+  return replaceCurrentTextblock(view, blockquote.create(null, [label, body]), true);
 }
 
 function insertCodeBlock(view, language = '') {
@@ -513,6 +527,41 @@ function insertMath(view, block = false) {
   return dispatchAndFocus(view, view.state.tr.replaceSelectionWith(node));
 }
 
+function nextFootnoteLabel(doc) {
+  const labels = new Set();
+  doc.descendants((node) => {
+    if (
+      (node.type.name === 'footnote_reference' || node.type.name === 'footnote_definition') &&
+      node.attrs.label
+    ) {
+      labels.add(node.attrs.label);
+    }
+    return true;
+  });
+
+  let index = 1;
+  while (labels.has('fn-' + index)) index++;
+  return 'fn-' + index;
+}
+
+function insertFootnote(view) {
+  const schema = view.state.schema;
+  const referenceType = schema.nodes.footnote_reference;
+  const definitionType = schema.nodes.footnote_definition;
+  const paragraph = schema.nodes.paragraph;
+  if (!referenceType || !definitionType || !paragraph) return false;
+
+  const label = nextFootnoteLabel(view.state.doc);
+  const reference = referenceType.create({ label });
+  const definitionText = textNode(schema, 'Footnote text');
+  const definition = definitionType.create({ label }, paragraph.create(null, definitionText));
+  const insertFrom = view.state.selection.from;
+  let tr = view.state.tr.replaceSelectionWith(reference);
+  tr = tr.insert(tr.doc.content.size, definition);
+  tr = tr.setSelection(Selection.near(tr.doc.resolve(Math.min(insertFrom + reference.nodeSize, tr.doc.content.size)), 1));
+  return dispatchAndFocus(view, tr);
+}
+
 function deleteSelection(view) {
   if (!view || view.state.selection.empty) return false;
   return dispatchAndFocus(view, view.state.tr.deleteSelection());
@@ -539,6 +588,7 @@ export function runEditorCommand(view, command, payload = {}) {
     return insertList(view, command);
   }
   if (command === 'blockquote') return insertBlockquote(view);
+  if (command === 'callout') return insertCallout(view, payload);
   if (command === 'codeBlock') return insertCodeBlock(view, payload.language || '');
   if (command === 'mermaid') return insertCodeBlock(view, 'mermaid');
   if (command === 'horizontalRule') return insertHorizontalRule(view);
@@ -560,6 +610,7 @@ export function runEditorCommand(view, command, payload = {}) {
   if (command === 'insertImage') return insertImage(view, payload);
   if (command === 'mathInline') return insertMath(view, false);
   if (command === 'mathBlock') return insertMath(view, true);
+  if (command === 'footnote') return insertFootnote(view);
   if (command === 'deleteSelection') return deleteSelection(view);
 
   return false;
