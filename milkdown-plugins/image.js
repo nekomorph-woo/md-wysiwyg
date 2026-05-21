@@ -3,41 +3,12 @@ import { NodeSelection, Plugin, Selection } from '@milkdown/kit/prose/state';
 import { $prose } from '@milkdown/kit/utils';
 import { $view } from './view';
 
-const fs = require('fs');
 const path = require('path');
-
-const IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.bmp']);
-
-function isImageFile(filePath, mimeType = '') {
-  if (mimeType && mimeType.startsWith('image/')) return true;
-  return IMAGE_EXTENSIONS.has(path.extname(filePath || '').toLowerCase());
-}
+const imageAssets = require('../lib/image-assets');
 
 function editorFilePath(view) {
   const host = view.dom.closest('.md-wysiwyg-editor');
   return host ? host.getAttribute('data-file-path') : '';
-}
-
-function uniqueTargetPath(dir, fileName) {
-  const parsed = path.parse(fileName || 'image.png');
-  const safeName = (parsed.name || 'image').replace(/[^a-zA-Z0-9._-]+/g, '-');
-  const ext = parsed.ext || '.png';
-  let candidate = path.join(dir, safeName + ext);
-  let index = 1;
-  while (fs.existsSync(candidate)) {
-    candidate = path.join(dir, safeName + '-' + index + ext);
-    index++;
-  }
-  return candidate;
-}
-
-async function copyImageToAssets(filePath, docPath) {
-  const docDir = path.dirname(docPath);
-  const assetsDir = path.join(docDir, 'assets');
-  await fs.promises.mkdir(assetsDir, { recursive: true });
-  const target = uniqueTargetPath(assetsDir, path.basename(filePath));
-  await fs.promises.copyFile(filePath, target);
-  return path.relative(docDir, target).split(path.sep).join('/');
 }
 
 function imageNode(schema, attrs) {
@@ -69,21 +40,45 @@ function filesFromDataTransfer(dataTransfer) {
     .filter(Boolean);
 }
 
+function imageUrlFromDataTransfer(dataTransfer) {
+  if (!dataTransfer) return '';
+  const uri = dataTransfer.getData && dataTransfer.getData('text/uri-list');
+  if (uri && /^https?:\/\//i.test(uri.trim())) return uri.trim().split(/\r?\n/)[0];
+  const text = dataTransfer.getData && dataTransfer.getData('text/plain');
+  if (text && /^https?:\/\/\S+$/i.test(text.trim())) return text.trim();
+  return '';
+}
+
+async function downloadImageUrl(url, docPath) {
+  if (!/^https?:\/\//i.test(url)) return null;
+  const response = await fetch(url);
+  if (!response.ok) throw new Error('Could not download image: HTTP ' + response.status);
+  const type = response.headers.get('content-type') || '';
+  if (!imageAssets.isImageFile(url, type)) return null;
+  const arrayBuffer = await response.arrayBuffer();
+  const ext = path.extname(new URL(url).pathname) || (type.includes('png') ? '.png' : '.jpg');
+  return imageAssets.localizeImageFile({
+    name: 'remote-image' + ext,
+    type,
+    arrayBuffer: () => Promise.resolve(arrayBuffer),
+  }, docPath);
+}
+
 function handleImageFiles(view, event) {
   const docPath = editorFilePath(view);
   if (!docPath) return false;
 
   const files = filesFromDataTransfer(event.clipboardData || event.dataTransfer)
-    .filter((file) => isImageFile(file.path, file.type));
-  if (files.length === 0) return false;
+    .filter((file) => imageAssets.isImageFile(file.path || file.name, file.type));
+  const imageUrl = imageUrlFromDataTransfer(event.clipboardData || event.dataTransfer);
+  if (files.length === 0 && !imageUrl) return false;
 
   event.preventDefault();
 
-  Promise.all(files.map(async (file) => {
-    if (!file.path) return null;
-    const src = await copyImageToAssets(file.path, docPath);
-    return { src, alt: path.basename(file.path, path.extname(file.path)), title: '' };
-  })).then((images) => {
+  const filePromises = files.map((file) => imageAssets.localizeImageFile(file, docPath));
+  const urlPromise = files.length === 0 && imageUrl ? downloadImageUrl(imageUrl, docPath) : null;
+
+  Promise.all(urlPromise ? [...filePromises, urlPromise] : filePromises).then((images) => {
     images.filter(Boolean).forEach((attrs) => insertImage(view, attrs));
   }).catch((err) => {
     if (typeof atom !== 'undefined' && atom.notifications) {
@@ -134,7 +129,7 @@ const imageNodeView = $view(imageSchema, () => {
     form.appendChild(deleteButton);
 
     function sync() {
-      img.src = node.attrs.src || '';
+      img.src = imageAssets.previewUrlForSrc(node.attrs.src || '', editorFilePath(view));
       img.alt = node.attrs.alt || '';
       img.title = node.attrs.title || '';
       srcInput.value = node.attrs.src || '';

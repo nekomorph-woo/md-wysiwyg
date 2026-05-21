@@ -18,28 +18,40 @@
       "md-wysiwyg:edit-link",
       "md-wysiwyg:copy",
       "md-wysiwyg:cut",
-      "md-wysiwyg:paste"
+      "md-wysiwyg:paste",
+      "md-wysiwyg:find",
+      "md-wysiwyg:replace",
+      "md-wysiwyg:manage-image-assets"
     ],
     ".md-wysiwyg-editor": [
       "md-wysiwyg:toggle",
       "md-wysiwyg:edit-link",
       "md-wysiwyg:copy",
       "md-wysiwyg:cut",
-      "md-wysiwyg:paste"
+      "md-wysiwyg:paste",
+      "md-wysiwyg:find",
+      "md-wysiwyg:replace",
+      "md-wysiwyg:manage-image-assets"
     ],
     ".md-wysiwyg-editor .ProseMirror": [
       "md-wysiwyg:toggle",
       "md-wysiwyg:edit-link",
       "md-wysiwyg:copy",
       "md-wysiwyg:cut",
-      "md-wysiwyg:paste"
+      "md-wysiwyg:paste",
+      "md-wysiwyg:find",
+      "md-wysiwyg:replace",
+      "md-wysiwyg:manage-image-assets"
     ],
     "atom-workspace": [
       "md-wysiwyg:toggle",
       "md-wysiwyg:edit-link",
       "md-wysiwyg:copy",
       "md-wysiwyg:cut",
-      "md-wysiwyg:paste"
+      "md-wysiwyg:paste",
+      "md-wysiwyg:find",
+      "md-wysiwyg:replace",
+      "md-wysiwyg:manage-image-assets"
     ]
   },
   "activationHooks": [
@@ -89,6 +101,12 @@
       "default": true,
       "title": "Open Markdown Files as WYSIWYG",
       "description": "Open Markdown files in rendered WYSIWYG mode by default. Use Alt+W to switch to source mode."
+    },
+    "assetsDirectory": {
+      "type": "string",
+      "default": "",
+      "title": "Image Assets Directory",
+      "description": "Directory used for pasted, dropped, and screenshot images. Leave empty to use the system Pictures/md-wysiwyg-assets folder."
     },
     "allowUnsafeRendering": {
       "type": "boolean",

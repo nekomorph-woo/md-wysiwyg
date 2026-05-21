@@ -23,4 +23,5 @@ export { prepareMarkdownForEditor, restoreMarkdownFromEditor } from './milkdown-
 export { footnotePlugin } from './milkdown-plugins/footnote.js';
 export { editingKeysPlugin } from './milkdown-plugins/editing-keys.js';
 export { slashCommandPlugin } from './milkdown-plugins/slash-command.js';
+export { searchReplacePlugin, openSearchPanel } from './milkdown-plugins/search-replace.js';
 export { runEditorCommand, getEditorStateInfo, getLinkAtSelection, selectedPlainText, LANGUAGE_OPTIONS } from './milkdown-plugins/editor-commands.js';
