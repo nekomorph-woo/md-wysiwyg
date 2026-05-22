@@ -7,7 +7,7 @@
   "scripts": {
     "build": "node esbuild-milkdown.js && node esbuild-mermaid.js"
   },
-  "repository": "https://github.com/nekomorph-woo/tk-ATx",
+  "repository": "https://github.com/nekomorph-woo/md-wysiwyg",
   "license": "MIT",
   "engines": {
     "atom": ">=1.0.0 <2.0.0"
