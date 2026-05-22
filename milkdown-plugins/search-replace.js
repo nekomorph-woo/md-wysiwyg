@@ -101,6 +101,44 @@ function replaceAll(view, pluginState) {
   return true;
 }
 
+function scrollCoordsIntoContainer(view, pos) {
+  const container = view.dom.closest('.milkdown-container') ||
+    view.dom.closest('.md-wysiwyg-editor') ||
+    view.dom.parentElement;
+  if (!container) return;
+
+  try {
+    const coords = view.coordsAtPos(pos);
+    const containerRect = container.getBoundingClientRect();
+    const padding = 56;
+    if (coords.top < containerRect.top + padding) {
+      container.scrollTop -= (containerRect.top + padding) - coords.top;
+    } else if (coords.bottom > containerRect.bottom - padding) {
+      container.scrollTop += coords.bottom - (containerRect.bottom - padding);
+    }
+  } catch (_err) {
+    // Fallback for edge positions where coordsAtPos cannot resolve cleanly.
+    const dom = view.domAtPos(pos).node;
+    const element = dom && dom.nodeType === Node.TEXT_NODE ? dom.parentElement : dom;
+    if (element && element.scrollIntoView) {
+      element.scrollIntoView({ block: 'center', inline: 'nearest' });
+    }
+  }
+}
+
+function revealActiveMatch(view) {
+  const pluginState = searchReplaceKey.getState(view.state);
+  const match = pluginState && pluginState.matches[pluginState.activeIndex];
+  if (!match) return false;
+  const selection = TextSelection.create(view.state.doc, match.from, match.to);
+  const tr = view.state.selection.eq(selection)
+    ? view.state.tr.scrollIntoView()
+    : view.state.tr.setSelection(selection).scrollIntoView();
+  view.dispatch(tr);
+  requestAnimationFrame(() => scrollCoordsIntoContainer(view, match.from));
+  return true;
+}
+
 class SearchReplaceView {
   constructor(view) {
     this.view = view;
@@ -141,8 +179,8 @@ class SearchReplaceView {
     this.replaceInput.addEventListener('input', () => this.dispatch({ type: 'replace', replace: this.replaceInput.value }));
     this.matchCase.addEventListener('click', () => this.dispatch({ type: 'toggleMatchCase' }));
     this.wholeWord.addEventListener('click', () => this.dispatch({ type: 'toggleWholeWord' }));
-    this.prev.addEventListener('click', () => this.dispatch({ type: 'move', delta: -1 }));
-    this.next.addEventListener('click', () => this.dispatch({ type: 'move', delta: 1 }));
+    this.prev.addEventListener('click', () => this.moveAndReveal(-1));
+    this.next.addEventListener('click', () => this.moveAndReveal(1));
     this.replace.addEventListener('click', () => replaceCurrent(this.view, searchReplaceKey.getState(this.view.state)));
     this.replaceAll.addEventListener('click', () => {
       const pluginState = searchReplaceKey.getState(this.view.state);
@@ -156,7 +194,7 @@ class SearchReplaceView {
       input.addEventListener('keydown', (event) => {
         if (event.key === 'Enter') {
           event.preventDefault();
-          this.dispatch({ type: 'move', delta: event.shiftKey ? -1 : 1 });
+          this.moveAndReveal(event.shiftKey ? -1 : 1);
         } else if (event.key === 'Escape') {
           event.preventDefault();
           closeSearch(this.view);
@@ -193,6 +231,14 @@ class SearchReplaceView {
     this.view.dispatch(this.view.state.tr.setMeta(searchReplaceKey, meta));
   }
 
+  moveAndReveal(delta) {
+    this.dispatch({ type: 'move', delta });
+    requestAnimationFrame(() => {
+      revealActiveMatch(this.view);
+      requestAnimationFrame(() => revealActiveMatch(this.view));
+    });
+  }
+
   update(view) {
     this.view = view;
     const pluginState = searchReplaceKey.getState(view.state);
@@ -218,13 +264,6 @@ class SearchReplaceView {
       this.queryInput.select();
     }
 
-    const match = pluginState.matches[pluginState.activeIndex];
-    if (match) {
-      const selection = TextSelection.create(view.state.doc, match.from, match.to);
-      if (!view.state.selection.eq(selection)) {
-        view.dispatch(view.state.tr.setSelection(selection).scrollIntoView());
-      }
-    }
   }
 
   destroy() {
@@ -260,8 +299,10 @@ export const searchReplacePlugin = $prose(() => {
         return buildDecorations(state.doc, searchReplaceKey.getState(state));
       },
       handleKeyDown(view, event) {
-        const isFind = (event.metaKey || event.ctrlKey) && !event.shiftKey && event.key.toLowerCase() === 'f';
-        const isReplace = (event.metaKey || event.ctrlKey) && !event.shiftKey && event.key.toLowerCase() === 'h';
+        const isFind = event.altKey && !event.metaKey && !event.ctrlKey && !event.shiftKey &&
+          event.key.toLowerCase() === 'f';
+        const isReplace = event.altKey && !event.metaKey && !event.ctrlKey && !event.shiftKey &&
+          event.key.toLowerCase() === 'r';
         if (isFind || isReplace) {
           event.preventDefault();
           openSearch(view, isReplace);
