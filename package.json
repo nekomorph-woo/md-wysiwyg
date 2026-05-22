@@ -1,13 +1,13 @@
 {
   "name": "md-wysiwyg",
   "main": "./lib/md-wysiwyg",
-  "version": "0.1.0",
+  "version": "0.6.0",
   "description": "Typora-like WYSIWYG markdown editor and viewer for Pulsar",
   "keywords": [],
   "scripts": {
     "build": "node esbuild-milkdown.js && node esbuild-mermaid.js"
   },
-  "repository": "https://github.com/nekomorph-woo/tk-ATx",
+  "repository": "https://github.com/nekomorph-woo/md-wysiwyg",
   "license": "MIT",
   "engines": {
     "atom": ">=1.0.0 <2.0.0"
@@ -18,28 +18,40 @@
       "md-wysiwyg:edit-link",
       "md-wysiwyg:copy",
       "md-wysiwyg:cut",
-      "md-wysiwyg:paste"
+      "md-wysiwyg:paste",
+      "md-wysiwyg:find",
+      "md-wysiwyg:replace",
+      "md-wysiwyg:manage-image-assets"
     ],
     ".md-wysiwyg-editor": [
       "md-wysiwyg:toggle",
       "md-wysiwyg:edit-link",
       "md-wysiwyg:copy",
       "md-wysiwyg:cut",
-      "md-wysiwyg:paste"
+      "md-wysiwyg:paste",
+      "md-wysiwyg:find",
+      "md-wysiwyg:replace",
+      "md-wysiwyg:manage-image-assets"
     ],
     ".md-wysiwyg-editor .ProseMirror": [
       "md-wysiwyg:toggle",
       "md-wysiwyg:edit-link",
       "md-wysiwyg:copy",
       "md-wysiwyg:cut",
-      "md-wysiwyg:paste"
+      "md-wysiwyg:paste",
+      "md-wysiwyg:find",
+      "md-wysiwyg:replace",
+      "md-wysiwyg:manage-image-assets"
     ],
     "atom-workspace": [
       "md-wysiwyg:toggle",
       "md-wysiwyg:edit-link",
       "md-wysiwyg:copy",
       "md-wysiwyg:cut",
-      "md-wysiwyg:paste"
+      "md-wysiwyg:paste",
+      "md-wysiwyg:find",
+      "md-wysiwyg:replace",
+      "md-wysiwyg:manage-image-assets"
     ]
   },
   "activationHooks": [
@@ -89,6 +101,12 @@
       "default": true,
       "title": "Open Markdown Files as WYSIWYG",
       "description": "Open Markdown files in rendered WYSIWYG mode by default. Use Alt+W to switch to source mode."
+    },
+    "assetsDirectory": {
+      "type": "string",
+      "default": "",
+      "title": "Image Assets Directory",
+      "description": "Directory used for pasted, dropped, and screenshot images. Leave empty to use the system Pictures/md-wysiwyg-assets folder."
     },
     "allowUnsafeRendering": {
       "type": "boolean",

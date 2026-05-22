@@ -14,7 +14,9 @@
     "cmd-x": "md-wysiwyg:cut",
     "ctrl-x": "md-wysiwyg:cut",
     "cmd-v": "md-wysiwyg:paste",
-    "ctrl-v": "md-wysiwyg:paste"
+    "ctrl-v": "md-wysiwyg:paste",
+    "alt-f": "md-wysiwyg:find",
+    "alt-r": "md-wysiwyg:replace"
   },
   "atom-workspace": {
     "alt-w": "md-wysiwyg:toggle"

@@ -13,7 +13,18 @@ function clipboardText(event) {
   return '';
 }
 
+function clipboardHasImage(event) {
+  const data = event.clipboardData;
+  if (!data) return false;
+  const files = Array.from(data.files || []);
+  if (files.some((file) => file.type && file.type.startsWith('image/'))) return true;
+  return Array.from(data.items || []).some((item) => {
+    return item.kind === 'file' && item.type && item.type.startsWith('image/');
+  });
+}
+
 function insertClipboardText(view, event) {
+  if (clipboardHasImage(event)) return false;
   const text = clipboardText(event);
   if (!text) return false;
   event.preventDefault();

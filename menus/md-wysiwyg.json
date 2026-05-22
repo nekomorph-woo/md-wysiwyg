@@ -17,6 +17,18 @@
             {
               "label": "Toggle WYSIWYG",
               "command": "md-wysiwyg:toggle"
+            },
+            {
+              "label": "Find in WYSIWYG",
+              "command": "md-wysiwyg:find"
+            },
+            {
+              "label": "Replace in WYSIWYG",
+              "command": "md-wysiwyg:replace"
+            },
+            {
+              "label": "Manage Image Assets",
+              "command": "md-wysiwyg:manage-image-assets"
             }
           ]
         }

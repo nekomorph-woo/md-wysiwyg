@@ -3,41 +3,12 @@ import { NodeSelection, Plugin, Selection } from '@milkdown/kit/prose/state';
 import { $prose } from '@milkdown/kit/utils';
 import { $view } from './view';
 
-const fs = require('fs');
 const path = require('path');
-
-const IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.bmp']);
-
-function isImageFile(filePath, mimeType = '') {
-  if (mimeType && mimeType.startsWith('image/')) return true;
-  return IMAGE_EXTENSIONS.has(path.extname(filePath || '').toLowerCase());
-}
+const imageAssets = require('../lib/image-assets');
 
 function editorFilePath(view) {
   const host = view.dom.closest('.md-wysiwyg-editor');
   return host ? host.getAttribute('data-file-path') : '';
-}
-
-function uniqueTargetPath(dir, fileName) {
-  const parsed = path.parse(fileName || 'image.png');
-  const safeName = (parsed.name || 'image').replace(/[^a-zA-Z0-9._-]+/g, '-');
-  const ext = parsed.ext || '.png';
-  let candidate = path.join(dir, safeName + ext);
-  let index = 1;
-  while (fs.existsSync(candidate)) {
-    candidate = path.join(dir, safeName + '-' + index + ext);
-    index++;
-  }
-  return candidate;
-}
-
-async function copyImageToAssets(filePath, docPath) {
-  const docDir = path.dirname(docPath);
-  const assetsDir = path.join(docDir, 'assets');
-  await fs.promises.mkdir(assetsDir, { recursive: true });
-  const target = uniqueTargetPath(assetsDir, path.basename(filePath));
-  await fs.promises.copyFile(filePath, target);
-  return path.relative(docDir, target).split(path.sep).join('/');
 }
 
 function imageNode(schema, attrs) {
@@ -58,6 +29,14 @@ function insertImage(view, attrs) {
   return true;
 }
 
+function setDropSelection(view, event) {
+  if (!event || typeof event.clientX !== 'number' || typeof event.clientY !== 'number') return;
+  const drop = view.posAtCoords({ left: event.clientX, top: event.clientY });
+  if (!drop || typeof drop.pos !== 'number') return;
+  const pos = Math.max(0, Math.min(drop.pos, view.state.doc.content.size));
+  view.dispatch(view.state.tr.setSelection(Selection.near(view.state.doc.resolve(pos), 1)));
+}
+
 function filesFromDataTransfer(dataTransfer) {
   if (!dataTransfer) return [];
   const files = Array.from(dataTransfer.files || []);
@@ -69,21 +48,62 @@ function filesFromDataTransfer(dataTransfer) {
     .filter(Boolean);
 }
 
-function handleImageFiles(view, event) {
+function hasImageDropPayload(dataTransfer) {
+  if (!dataTransfer) return false;
+  const files = Array.from(dataTransfer.files || []);
+  if (files.some((file) => imageAssets.isImageFile(file.path || file.name, file.type))) return true;
+  const items = Array.from(dataTransfer.items || []);
+  if (items.some((item) => item.kind === 'file' && imageAssets.isImageFile('', item.type))) return true;
+  if (imageUrlFromDataTransfer(dataTransfer)) return true;
+  return Array.from(dataTransfer.types || []).includes('Files') && items.length === 0;
+}
+
+function imageUrlFromDataTransfer(dataTransfer) {
+  if (!dataTransfer) return '';
+  const uri = dataTransfer.getData && dataTransfer.getData('text/uri-list');
+  if (uri && /^https?:\/\//i.test(uri.trim())) return uri.trim().split(/\r?\n/)[0];
+  const text = dataTransfer.getData && dataTransfer.getData('text/plain');
+  if (text && /^https?:\/\/\S+$/i.test(text.trim())) return text.trim();
+  return '';
+}
+
+async function downloadImageUrl(url, docPath) {
+  if (!/^https?:\/\//i.test(url)) return null;
+  const response = await fetch(url);
+  if (!response.ok) throw new Error('Could not download image: HTTP ' + response.status);
+  const type = response.headers.get('content-type') || '';
+  if (!imageAssets.isImageFile(url, type)) return null;
+  const arrayBuffer = await response.arrayBuffer();
+  const ext = path.extname(new URL(url).pathname) || (type.includes('png') ? '.png' : '.jpg');
+  return imageAssets.localizeImageFile({
+    name: 'remote-image' + ext,
+    type,
+    arrayBuffer: () => Promise.resolve(arrayBuffer),
+  }, docPath);
+}
+
+function stopNativeDrop(event) {
+  event.preventDefault();
+  event.stopPropagation();
+  if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+}
+
+function handleImageFiles(view, event, options = {}) {
   const docPath = editorFilePath(view);
   if (!docPath) return false;
 
   const files = filesFromDataTransfer(event.clipboardData || event.dataTransfer)
-    .filter((file) => isImageFile(file.path, file.type));
-  if (files.length === 0) return false;
+    .filter((file) => imageAssets.isImageFile(file.path || file.name, file.type));
+  const imageUrl = imageUrlFromDataTransfer(event.clipboardData || event.dataTransfer);
+  if (files.length === 0 && !imageUrl) return false;
 
-  event.preventDefault();
+  stopNativeDrop(event);
+  if (options.useDropPosition) setDropSelection(view, event);
 
-  Promise.all(files.map(async (file) => {
-    if (!file.path) return null;
-    const src = await copyImageToAssets(file.path, docPath);
-    return { src, alt: path.basename(file.path, path.extname(file.path)), title: '' };
-  })).then((images) => {
+  const filePromises = files.map((file) => imageAssets.localizeImageFile(file, docPath));
+  const urlPromise = files.length === 0 && imageUrl ? downloadImageUrl(imageUrl, docPath) : null;
+
+  Promise.all(urlPromise ? [...filePromises, urlPromise] : filePromises).then((images) => {
     images.filter(Boolean).forEach((attrs) => insertImage(view, attrs));
   }).catch((err) => {
     if (typeof atom !== 'undefined' && atom.notifications) {
@@ -91,6 +111,14 @@ function handleImageFiles(view, event) {
     }
   });
 
+  return true;
+}
+
+function handleImageDragOver(event) {
+  if (!hasImageDropPayload(event.dataTransfer)) return false;
+  event.preventDefault();
+  event.stopPropagation();
+  if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
   return true;
 }
 
@@ -104,9 +132,15 @@ const imageNodeView = $view(imageSchema, () => {
     wrapper.appendChild(img);
 
     const form = document.createElement('span');
-    form.className = 'md-wysiwyg-image-editor';
+    form.className = 'md-wysiwyg-image-editor md-wysiwyg-floating-image-editor';
     form.style.display = 'none';
-    wrapper.appendChild(form);
+    form.style.position = 'fixed';
+    form.style.zIndex = '1000';
+    form.style.gridTemplateColumns = 'minmax(220px, 1fr) minmax(110px, 150px) minmax(110px, 150px) max-content max-content';
+    form.style.width = 'min(680px, calc(100vw - 24px))';
+    form.draggable = false;
+    const editorHost = view.dom.closest('.md-wysiwyg-editor');
+    (editorHost || document.body).appendChild(form);
 
     const srcInput = document.createElement('input');
     srcInput.className = 'input-text native-key-bindings';
@@ -134,12 +168,43 @@ const imageNodeView = $view(imageSchema, () => {
     form.appendChild(deleteButton);
 
     function sync() {
-      img.src = node.attrs.src || '';
+      img.src = imageAssets.previewUrlForSrc(node.attrs.src || '', editorFilePath(view));
       img.alt = node.attrs.alt || '';
       img.title = node.attrs.title || '';
       srcInput.value = node.attrs.src || '';
       altInput.value = node.attrs.alt || '';
       titleInput.value = node.attrs.title || '';
+    }
+    const refreshAssetPreview = () => sync();
+
+    function disableNodeDrag() {
+      wrapper.draggable = false;
+      wrapper.removeAttribute('draggable');
+      img.draggable = false;
+      img.removeAttribute('draggable');
+      form.draggable = false;
+      form.removeAttribute('draggable');
+    }
+
+    function positionEditor() {
+      if (form.style.display === 'none') return;
+      const rect = img.getBoundingClientRect();
+      const viewportPadding = 12;
+      const maxLeft = Math.max(viewportPadding, window.innerWidth - form.offsetWidth - viewportPadding);
+      const left = Math.min(Math.max(rect.left, viewportPadding), maxLeft);
+      const below = rect.bottom + 8;
+      const above = rect.top - form.offsetHeight - 8;
+      let top = below + form.offsetHeight <= window.innerHeight - viewportPadding
+        ? below
+        : Math.max(viewportPadding, above);
+      if (rect.bottom < viewportPadding || rect.top > window.innerHeight - viewportPadding) {
+        top = Math.min(
+          Math.max(viewportPadding, rect.top),
+          Math.max(viewportPadding, window.innerHeight - form.offsetHeight - viewportPadding),
+        );
+      }
+      form.style.left = left + 'px';
+      form.style.top = top + 'px';
     }
 
     function update(attrs) {
@@ -156,11 +221,17 @@ const imageNodeView = $view(imageSchema, () => {
     function showEditor() {
       form.style.display = 'grid';
       wrapper.classList.add('selected');
+      disableNodeDrag();
+      positionEditor();
+      window.addEventListener('resize', positionEditor);
+      window.addEventListener('scroll', positionEditor, true);
     }
 
     function hideEditor() {
       form.style.display = 'none';
       wrapper.classList.remove('selected');
+      window.removeEventListener('resize', positionEditor);
+      window.removeEventListener('scroll', positionEditor, true);
     }
 
     function selectImage() {
@@ -187,14 +258,45 @@ const imageNodeView = $view(imageSchema, () => {
       selectImage();
       showEditor();
     });
-    form.addEventListener('mousedown', (event) => {
+    wrapper.addEventListener('dragstart', (event) => {
+      if (form.style.display === 'none') return;
+      event.preventDefault();
+      event.stopPropagation();
+      if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+    }, true);
+    const stopEditingEvent = (event) => {
+      disableNodeDrag();
+      event.stopPropagation();
+    };
+    const stopEditingDrag = (event) => {
+      disableNodeDrag();
+      event.preventDefault();
+      event.stopPropagation();
+      if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+    };
+    ['mousedown', 'mouseup', 'mousemove', 'dblclick', 'selectstart'].forEach((eventName) => {
+      form.addEventListener(eventName, stopEditingEvent);
+    });
+    form.addEventListener('click', stopEditingEvent);
+    ['dragstart', 'dragover', 'drop'].forEach((eventName) => {
+      form.addEventListener(eventName, stopEditingDrag, true);
+      form.addEventListener(eventName, stopEditingDrag);
+    });
+    [srcInput, altInput, titleInput].forEach((input) => {
+      input.draggable = false;
+      input.addEventListener('mousedown', disableNodeDrag, true);
+      input.addEventListener('focus', disableNodeDrag);
+      input.addEventListener('dragstart', stopEditingDrag, true);
+      input.addEventListener('dragstart', stopEditingDrag);
+    });
+    apply.addEventListener('mousedown', (event) => {
+      event.preventDefault();
       event.stopPropagation();
     });
-    form.addEventListener('click', (event) => {
+    deleteButton.addEventListener('mousedown', (event) => {
+      event.preventDefault();
       event.stopPropagation();
     });
-    apply.addEventListener('mousedown', (event) => event.preventDefault());
-    deleteButton.addEventListener('mousedown', (event) => event.preventDefault());
     apply.addEventListener('click', (event) => {
       event.preventDefault();
       event.stopPropagation();
@@ -210,6 +312,7 @@ const imageNodeView = $view(imageSchema, () => {
       event.stopPropagation();
       deleteImage();
     });
+    window.addEventListener('md-wysiwyg:assets-changed', refreshAssetPreview);
 
     sync();
 
@@ -219,6 +322,8 @@ const imageNodeView = $view(imageSchema, () => {
         if (newNode.type.name !== node.type.name) return false;
         node = newNode;
         sync();
+        if (form.style.display !== 'none') disableNodeDrag();
+        positionEditor();
         return true;
       },
       selectNode() {
@@ -230,6 +335,12 @@ const imageNodeView = $view(imageSchema, () => {
       stopEvent(event) {
         return form.contains(event.target) || event.target === img;
       },
+      destroy() {
+        window.removeEventListener('md-wysiwyg:assets-changed', refreshAssetPreview);
+        window.removeEventListener('resize', positionEditor);
+        window.removeEventListener('scroll', positionEditor, true);
+        if (form.parentNode) form.parentNode.removeChild(form);
+      },
       ignoreMutation() {
         return true;
       },
@@ -239,12 +350,41 @@ const imageNodeView = $view(imageSchema, () => {
 
 const imagePasteDropPlugin = $prose(() => {
   return new Plugin({
+    view(view) {
+      const host = view.dom.closest('.md-wysiwyg-editor') || view.dom;
+      const insideEditor = (event) => view.dom.contains(event.target);
+      const onDragOver = (event) => {
+        if (!insideEditor(event)) return;
+        handleImageDragOver(event);
+      };
+      const onDrop = (event) => {
+        if (!insideEditor(event)) return;
+        if (hasImageDropPayload(event.dataTransfer)) {
+          handleImageFiles(view, event, { useDropPosition: true });
+        }
+      };
+      host.addEventListener('dragenter', onDragOver, true);
+      host.addEventListener('dragover', onDragOver, true);
+      host.addEventListener('drop', onDrop, true);
+      return {
+        destroy() {
+          host.removeEventListener('dragenter', onDragOver, true);
+          host.removeEventListener('dragover', onDragOver, true);
+          host.removeEventListener('drop', onDrop, true);
+        },
+      };
+    },
     props: {
+      handleDOMEvents: {
+        dragover(_view, event) {
+          return handleImageDragOver(event);
+        },
+      },
       handlePaste(view, event) {
         return handleImageFiles(view, event);
       },
       handleDrop(view, event) {
-        return handleImageFiles(view, event);
+        return handleImageFiles(view, event, { useDropPosition: true });
       },
     },
   });
