@@ -1,7 +1,7 @@
 {
   "name": "md-wysiwyg",
   "main": "./lib/md-wysiwyg",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Typora-like WYSIWYG markdown editor and viewer for Pulsar",
   "keywords": [],
   "scripts": {

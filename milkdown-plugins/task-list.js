@@ -31,7 +31,6 @@ function createCheckbox(node, view, listItemPos) {
     view.dispatch(
       view.state.tr
         .setNodeMarkup(listItemPos, currentNode.type, attrs, currentNode.marks)
-        .scrollIntoView()
     );
     view.focus();
   });
