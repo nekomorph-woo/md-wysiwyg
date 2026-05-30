@@ -20,6 +20,7 @@ export { taskListInteractionPlugin } from './milkdown-plugins/task-list.js';
 export { imageSupportPlugin } from './milkdown-plugins/image.js';
 export { calloutPlugin } from './milkdown-plugins/callout.js';
 export { htmlCompatibilityPlugin } from './milkdown-plugins/html.js';
+export { lineBreakViewPlugin } from './milkdown-plugins/line-breaks.js';
 export { prepareMarkdownForEditor, restoreMarkdownFromEditor } from './milkdown-plugins/frontmatter.js';
 export { footnotePlugin } from './milkdown-plugins/footnote.js';
 export { editingKeysPlugin } from './milkdown-plugins/editing-keys.js';
